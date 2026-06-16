@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dreame Launcher</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="window-drag-strip" aria-hidden="true"></div>
+    <div class="window-control-tint" aria-hidden="true"></div>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">D</div>
+          <div>
+            <strong>Dreame</strong>
+            <span>Launcher</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Launcher">
+          <button class="nav-item active" data-view="home">Home</button>
+          <button class="nav-item" data-view="explore">Explore</button>
+          <button class="nav-item" data-view="instances">Instances</button>
+          <button class="nav-item" data-view="skin">Skin</button>
+        </nav>
+
+        <section class="profile">
+          <div class="avatar">DP</div>
+          <div>
+            <strong id="profileName">DreamePlayer</strong>
+            <span>Ready to play</span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Minecraft desktop launcher</p>
+            <h1>Dreame Launcher</h1>
+          </div>
+          <button id="openDataFolder" class="icon-button" title="Open data folder">Folder</button>
+        </header>
+
+        <section class="recent-servers home-view">
+          <div class="recent-servers-head">
+            <div>
+              <h2>Welcome back!</h2>
+              <p class="subcopy">Jump back in</p>
+            </div>
+            <button id="browseServersButton" class="secondary-button">Browse Servers</button>
+          </div>
+          <div id="recentServersList" class="recent-servers-list"></div>
+        </section>
+
+        <section class="dashboard home-view">
+          <article class="panel auth-panel">
+            <h3>Login</h3>
+            <div class="account-row">
+              <div class="avatar" id="accountAvatar">DP</div>
+              <div>
+                <strong id="accountName">No account selected</strong>
+                <span id="accountType">Add Microsoft or local offline</span>
+              </div>
+            </div>
+            <div class="login-actions">
+              <button id="microsoftLogin" class="mini-button">Microsoft Login</button>
+              <button id="xalLogin" class="mini-button ghost">Sisu/XAL Login</button>
+              <button id="offlineLogin" class="mini-button ghost">Offline Account</button>
+            </div>
+            <div id="deviceCodeBox" class="device-code-box" hidden>
+              <span>Enter this code in Microsoft</span>
+              <strong id="deviceCode">----</strong>
+              <span id="deviceCodeCopyHint" class="device-code-copy-hint">Click to copy</span>
+            </div>
+            <p id="authStatus" class="auth-status">Microsoft login opens in your browser. If the account does not own Minecraft Java, Dreame Launcher will tell you.</p>
+          </article>
+
+          <article class="panel player-panel">
+            <h3>Player</h3>
+            <div class="player-display">
+              <span>Minecraft name</span>
+              <strong id="minecraftName">Login first</strong>
+            </div>
+            <div id="accountList" class="account-list"></div>
+          </article>
+
+          <article class="panel accent-panel">
+            <h3>Appearance</h3>
+            <div class="field-group">
+              <span>Theme</span>
+              <div class="segmented theme-options" id="themeOptions">
+                <button type="button" data-theme="color" class="selected">Color</button>
+                <button type="button" data-theme="gray">Black / Gray</button>
+              </div>
+            </div>
+            <h3>UI Color</h3>
+            <div class="swatches" id="swatches"></div>
+            <label>
+              Custom
+              <input id="accent" type="color" />
+            </label>
+          </article>
+        </section>
+
+        <section id="instancesView" class="instances-view app-view" hidden>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Profiles and modpacks</p>
+              <h2>Instances</h2>
+            </div>
+            <button id="createInstance" class="mini-button">Create Instance</button>
+          </div>
+
+          <div class="instances-layout">
+            <div>
+              <div id="instancesGrid" class="instances-grid"></div>
+            </div>
+
+            <aside id="instanceDetail" class="instance-detail">
+              <p class="empty-accounts">Select an instance to configure folders, Java, memory, and files.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="exploreView" class="explore-view app-view" hidden>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Modrinth browser</p>
+              <h2>Explore</h2>
+            </div>
+            <button id="refreshExplore" class="mini-button ghost">Refresh</button>
+          </div>
+
+          <div class="explore-tabs" id="exploreTabs">
+            <button class="selected" data-explore-type="modpacks">Modpacks</button>
+            <button data-explore-type="mods">Mods</button>
+            <button data-explore-type="resourcepacks">Resource Packs</button>
+            <button data-explore-type="datapacks">Data Packs</button>
+            <button data-explore-type="shaders">Shaders</button>
+            <button data-explore-type="servers">Servers</button>
+          </div>
+
+          <div class="explore-search">
+            <input id="exploreSearch" placeholder="Search Modrinth..." />
+            <button id="exploreSearchButton" class="mini-button">Search</button>
+          </div>
+
+          <div id="explorePagination" class="explore-pagination"></div>
+          <p id="exploreStatus" class="auth-status">Search Modrinth for modpacks, mods, resource packs, data packs, shaders, and servers.</p>
+          <div id="exploreResults" class="explore-results"></div>
+        </section>
+
+        <section id="skinView" class="skin-view app-view" hidden>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Player style</p>
+              <h2>Skin Selector</h2>
+            </div>
+            <button id="skinUploadButton" class="mini-button">Upload Skin</button>
+          </div>
+
+          <div id="skinLoginGate" class="skin-login-gate">
+            <h3 id="skinGateTitle">You are not logged in</h3>
+            <p id="skinGateMessage">Login or select an account first, then you can upload, preview, and change skins.</p>
+          </div>
+
+          <div class="skin-layout">
+            <article class="skin-preview-panel">
+              <div class="skin-nameplate" id="skinPreviewName">No skin selected</div>
+              <div id="skinStage" class="skin-stage" aria-label="3D skin preview">
+                <div id="skinModel" class="skin-model">
+                  <div class="skin-part skin-head">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                  <div class="skin-part skin-body">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                  <div class="skin-part skin-arm skin-arm-left">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                  <div class="skin-part skin-arm skin-arm-right">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                  <div class="skin-part skin-leg skin-leg-left">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                  <div class="skin-part skin-leg skin-leg-right">
+                    <span class="skin-face front"></span><span class="skin-face back"></span><span class="skin-face left"></span><span class="skin-face right"></span><span class="skin-face top"></span><span class="skin-face bottom"></span>
+                  </div>
+                </div>
+              </div>
+              <p class="drag-hint">Drag to rotate</p>
+              <div class="modal-actions">
+                <button id="skinChangeButton" class="play-button" type="button">Change</button>
+                <button id="skinRemoveButton" class="secondary-button" type="button">Remove</button>
+              </div>
+              <p id="skinStatus" class="auth-status">Upload a Minecraft skin PNG, select it, then click Change.</p>
+            </article>
+
+            <article class="skin-library">
+              <div class="skin-library-head">
+                <h3>Saved skins</h3>
+                <label class="skin-add-card">
+                  <input id="skinFileInput" type="file" accept="image/png" hidden />
+                  <span class="skin-plus">+</span>
+                  <strong>Add skin</strong>
+                  <small>PNG only</small>
+                </label>
+              </div>
+              <div id="skinGrid" class="skin-grid"></div>
+            </article>
+          </div>
+        </section>
+
+        <footer class="data-path home-view">
+          <span>Saving to</span>
+          <code id="dataPath">Loading...</code>
+        </footer>
+      </section>
+    </main>
+
+    <div id="instanceModal" class="modal-backdrop" hidden>
+      <form id="instanceForm" class="instance-modal">
+        <div class="modal-head">
+          <h2 id="instanceModalTitle">Create instance</h2>
+          <button id="closeInstanceModal" type="button" class="round-button">x</button>
+        </div>
+
+        <div class="icon-picker">
+          <div id="instanceIconPreview" class="instance-icon-preview">□</div>
+          <div class="icon-actions">
+            <button id="selectInstanceIcon" type="button" class="secondary-button">Select icon</button>
+            <button id="removeInstanceIcon" type="button" class="secondary-button">Remove icon</button>
+          </div>
+        </div>
+
+        <label>
+          Name
+          <input id="instanceName" placeholder="Fabric 1.21.6" required />
+        </label>
+
+        <div class="field-group">
+          <span>Loader</span>
+          <div class="segmented" id="loaderOptions">
+            <button type="button" data-loader="vanilla" class="selected">Vanilla</button>
+            <button type="button" data-loader="fabric">Fabric</button>
+            <button type="button" data-loader="neoforge">NeoForge</button>
+            <button type="button" data-loader="forge">Forge</button>
+            <button type="button" data-loader="quilt">Quilt</button>
+          </div>
+        </div>
+
+        <label>
+          Game version
+          <select id="gameVersion"></select>
+        </label>
+
+        <div class="field-group">
+          <span>Loader version</span>
+          <div class="segmented" id="loaderVersionOptions">
+            <button type="button" data-loader-version="stable" class="selected">Stable</button>
+            <button type="button" data-loader-version="latest">Latest</button>
+            <button type="button" data-loader-version="other">Other</button>
+          </div>
+        </div>
+
+        <label id="customLoaderVersionWrap" hidden>
+          Custom loader version
+          <input id="customLoaderVersion" placeholder="Example: 0.16.14" />
+        </label>
+
+        <div id="instanceCreateProgress" class="modal-progress" hidden>
+          <div>
+            <span id="instanceCreateProgressLabel">Preparing instance...</span>
+            <strong id="instanceCreateProgressPercent">1%</strong>
+          </div>
+          <div class="modal-progress-track"><span id="instanceCreateProgressFill"></span></div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="backInstanceModal" type="button" class="secondary-button">Back</button>
+          <button type="submit" class="play-button">Create instance</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="offlineAccountModal" class="modal-backdrop" hidden>
+      <form id="offlineAccountForm" class="instance-modal account-modal">
+        <div class="modal-head">
+          <h2>Offline Account</h2>
+          <button id="closeOfflineAccountModal" type="button" class="round-button">x</button>
+        </div>
+
+        <label>
+          Minecraft name
+          <input id="offlineAccountName" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" placeholder="DreamePlayer" required />
+        </label>
+
+        <p class="modal-note">Works for local play and offline-mode servers only.</p>
+
+        <div class="modal-actions">
+          <button id="cancelOfflineAccount" type="button" class="secondary-button">Cancel</button>
+          <button type="submit" class="play-button">Add account</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="deleteInstanceModal" class="modal-backdrop" hidden>
+      <div class="instance-modal account-modal" role="dialog" aria-modal="true" aria-labelledby="deleteInstanceTitle">
+        <div class="modal-head">
+          <h2 id="deleteInstanceTitle">Delete Instance</h2>
+          <button id="closeDeleteInstanceModal" type="button" class="round-button">x</button>
+        </div>
+
+        <p id="deleteInstanceMessage" class="modal-note">Are you sure you want to delete this instance?</p>
+
+        <div class="modal-actions">
+          <button id="cancelDeleteInstance" type="button" class="secondary-button">No</button>
+          <button id="confirmDeleteInstance" type="button" class="play-button danger-button">Yes</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modrinthInstallModal" class="modal-backdrop" hidden>
+      <div class="instance-modal modrinth-modal" role="dialog" aria-modal="true" aria-labelledby="modrinthInstallTitle">
+        <div class="modal-head">
+          <h2 id="modrinthInstallTitle">Install from Modrinth</h2>
+          <button id="closeModrinthInstallModal" type="button" class="round-button">x</button>
+        </div>
+
+        <p id="modrinthInstallSummary" class="modal-note"></p>
+
+        <div id="modrinthVersionWrap" class="field-group version-picker-wrap">
+          <span>Version</span>
+          <input id="modrinthVersionSearch" type="search" placeholder="Search versions..." />
+          <button id="modrinthVersionButton" type="button" class="version-picker-button">
+            <span id="modrinthVersionLabel">Loading versions...</span>
+            <span class="version-picker-arrow">v</span>
+          </button>
+          <div id="modrinthVersionMenu" class="version-picker-menu" hidden></div>
+        </div>
+
+        <label id="modrinthInstanceWrap">
+          Instance
+          <select id="modrinthInstanceSelect"></select>
+        </label>
+
+        <div id="modrinthInstallProgress" class="modal-progress" hidden>
+          <div>
+            <span id="modrinthInstallProgressLabel">Installing...</span>
+            <strong id="modrinthInstallProgressPercent">1%</strong>
+          </div>
+          <div class="modal-progress-track"><span id="modrinthInstallProgressFill"></span></div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="cancelModrinthInstall" type="button" class="secondary-button">Cancel</button>
+          <button id="confirmModrinthInstall" type="button" class="play-button">Install</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../node_modules/skinview3d/bundles/skinview3d.bundle.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

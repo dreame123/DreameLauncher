@@ -1,0 +1,57 @@
+{
+  "name": "dreame-launcher",
+  "version": "0.1.0",
+  "description": "Dreame Launcher - a smooth custom Minecraft launcher.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "fix:electron": "node scripts/fix-electron.js",
+    "build": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis --x64"
+  },
+  "build": {
+    "appId": "com.dreame.launcher",
+    "productName": "Dreame Launcher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "node_modules/skinview3d/bundles/skinview3d.bundle.js",
+      "node_modules/skinview3d/assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  },
+  "trustedDependencies": [
+    "electron"
+  ],
+  "allowScripts": {
+    "electron@31.7.7": true
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "skinview3d": "^3.4.2",
+    "three": "^0.184.0",
+    "xal-node": "^1.1.5"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}
