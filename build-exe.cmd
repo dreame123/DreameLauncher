@@ -49,6 +49,16 @@ if errorlevel 1 (
 )
 
 echo.
+echo Generating launcher icon...
+call npm.cmd run make:icons
+if errorlevel 1 (
+  echo.
+  echo Icon generation failed.
+  pause
+  exit /b 1
+)
+
+echo.
 echo Building Windows installer...
 set CSC_IDENTITY_AUTO_DISCOVERY=false
 call npm.cmd run build

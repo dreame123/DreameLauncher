@@ -15,24 +15,61 @@ Dreame Launcher is a custom Electron Minecraft launcher for Windows. It is built
 - 💜 Custom launcher logo and Windows installer icon
 - ☕ Portable Java setup when needed
 - 🪟 Windows `.exe` installer build with shortcut support
+- 🔄 GitHub Releases updater
 
 ## ✅ Requirements
 
 - Windows 10/11
-- Node.js and npm
 - A Microsoft account that owns Minecraft Java Edition for premium online play
 
 Offline accounts can launch Minecraft, but they cannot join premium/authenticated servers.
 
 ## 🚀 Install
 
-1. Go to the **[Releases](https://github.com/dreame123/DreameLauncher/releases/tag/DLauncher)** page on this GitHub repo.
+1. Go to the **[Releases](https://github.com/dreame123/DreameLauncher/releases/tag/DLauncher)** page.
 2. Download the latest **Dreame Launcher Builder** or installer file.
 3. Run the downloaded file.
 4. Follow the setup window.
 5. Open Dreame Launcher from your desktop or Start Menu shortcut.
 
 The builder handles the setup for you, so you do not need to run npm commands manually.
+
+## 🔄 Auto Updates
+
+Dreame Launcher checks GitHub Releases for newer launcher builds.
+
+To make updates work:
+
+1. Open `package.json`.
+2. Set `dreame.githubRepo` to your GitHub repo:
+
+```json
+"dreame": {
+  "githubRepo": "your-username/dreamelauncher"
+}
+```
+
+3. Build the launcher.
+4. Create a GitHub Release with a higher version tag, like `v0.1.1`.
+5. Upload the new `Dreame Launcher Setup ...exe` file to that release.
+
+When users open the launcher, it checks the latest release and lets them download/install the new version.
+
+## 💜 Logo And Icon
+
+The launcher uses:
+
+```text
+renderer\assets\logo.png
+```
+
+When building, that PNG is converted into:
+
+```text
+build\icon.ico
+```
+
+That icon is used for the packaged app, installer, and Windows shortcuts.
 
 ## 📂 Project Structure
 

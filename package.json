@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "description": "Dreame Launcher - a smooth custom Minecraft launcher.",
   "main": "main.js",
+  "dreame": {
+    "githubRepo": "dreame123/DreameLauncher"
+  },
   "scripts": {
     "start": "electron .",
     "fix:electron": "node scripts/fix-electron.js",
-    "build": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis --x64"
+    "make:icons": "powershell -ExecutionPolicy Bypass -File \"%cd%\\scripts\\generate-icons.ps1\"",
+    "build": "npm run make:icons && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis --x64"
   },
   "build": {
     "appId": "com.dreame.launcher",
@@ -18,12 +22,15 @@
       "main.js",
       "preload.js",
       "renderer/**/*",
+      "build/icon.ico",
+      "build/icon-256.png",
       "node_modules/skinview3d/bundles/skinview3d.bundle.js",
       "node_modules/skinview3d/assets/**/*",
       "package.json"
     ],
     "win": {
       "target": "nsis",
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {

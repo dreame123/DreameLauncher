@@ -12,7 +12,11 @@ const xalTokensPath = path.join(appDataRoot, "xal.tokens.json");
 const instancesMetaPath = path.join(appDataRoot, "instances.json");
 const skinsMetaPath = path.join(appDataRoot, "skins.json");
 const recentServersPath = path.join(appDataRoot, "recent-servers.json");
+const updatesRoot = path.join(appDataRoot, "updates");
+const launcherIconPath = path.join(__dirname, "renderer", "assets", "logo.png");
 const bundledMicrosoftClientId = process.env.DREAME_MICROSOFT_CLIENT_ID || "00000000402b5328";
+const packageInfo = require("./package.json");
+const githubUpdateRepo = process.env.DREAME_GITHUB_REPO || packageInfo.dreame?.githubRepo || "";
 let pendingXalRedirect = null;
 const runningProcesses = new Map();
 const transparentTitleBarColor = "rgba(0, 0, 0, 0)";
@@ -36,6 +40,7 @@ function ensureLauncherData() {
     path.join(appDataRoot, "instances"),
     path.join(appDataRoot, "logs"),
     path.join(appDataRoot, "skins"),
+    updatesRoot,
     path.join(appDataRoot, "versions")
   ];
 
@@ -116,6 +121,112 @@ function writeSettings(nextSettings) {
   const settings = { ...readSettings(), ...nextSettings, lastOpenedAt: new Date().toISOString() };
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   return settings;
+}
+
+function normalizeVersion(version) {
+  return String(version || "").trim().replace(/^v/i, "");
+}
+
+function compareVersions(left, right) {
+  const a = normalizeVersion(left).split(/[.-]/).map((part) => Number.parseInt(part, 10));
+  const b = normalizeVersion(right).split(/[.-]/).map((part) => Number.parseInt(part, 10));
+  const length = Math.max(a.length, b.length);
+  for (let index = 0; index < length; index += 1) {
+    const av = Number.isFinite(a[index]) ? a[index] : 0;
+    const bv = Number.isFinite(b[index]) ? b[index] : 0;
+    if (av > bv) return 1;
+    if (av < bv) return -1;
+  }
+  return 0;
+}
+
+function getUpdateRepo() {
+  const repo = String(githubUpdateRepo || "").trim();
+  if (!/^[^/\s]+\/[^/\s]+$/.test(repo) || repo === "OWNER/REPO") {
+    throw new Error("Set package.json dreame.githubRepo to your GitHub repo, like username/dreamelauncher.");
+  }
+  return repo;
+}
+
+function pickReleaseInstaller(release) {
+  const assets = Array.isArray(release?.assets) ? release.assets : [];
+  return assets.find((asset) => /\.exe$/i.test(asset.name || "") && /setup|installer|launcher/i.test(asset.name || ""))
+    || assets.find((asset) => /\.exe$/i.test(asset.name || ""));
+}
+
+async function checkForLauncherUpdate() {
+  const repo = getUpdateRepo();
+  const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "User-Agent": `Dreame-Launcher/${app.getVersion()}`
+    }
+  });
+  if (!response.ok) throw new Error(`Could not check GitHub releases (${response.status}).`);
+  const release = await response.json();
+  const latestVersion = normalizeVersion(release.tag_name || release.name);
+  const currentVersion = normalizeVersion(app.getVersion());
+  const installer = pickReleaseInstaller(release);
+  const available = latestVersion && compareVersions(latestVersion, currentVersion) > 0;
+
+  return {
+    available,
+    currentVersion,
+    latestVersion,
+    releaseName: release.name || release.tag_name || latestVersion,
+    releaseUrl: release.html_url || `https://github.com/${repo}/releases/latest`,
+    notes: release.body || "",
+    assetName: installer?.name || "",
+    downloadUrl: installer?.browser_download_url || "",
+    repo
+  };
+}
+
+async function downloadLauncherUpdate(sender = null) {
+  ensureLauncherData();
+  const update = await checkForLauncherUpdate();
+  if (!update.available) return { ...update, downloaded: false, message: "Dreame Launcher is already up to date." };
+  if (!update.downloadUrl) throw new Error("Latest GitHub release has no .exe installer asset.");
+
+  const fileName = update.assetName || `Dreame-Launcher-${update.latestVersion}.exe`;
+  const destination = path.join(updatesRoot, fileName.replace(/[<>:"/\\|?*\x00-\x1F]/g, "-"));
+  const response = await fetch(update.downloadUrl, {
+    headers: { "User-Agent": `Dreame-Launcher/${app.getVersion()}` }
+  });
+  if (!response.ok) throw new Error(`Update download failed (${response.status}).`);
+
+  const total = Number(response.headers.get("content-length") || 0);
+  const chunks = [];
+  let received = 0;
+  if (response.body?.getReader) {
+    const reader = response.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(Buffer.from(value));
+      received += value.length;
+      if (sender) {
+        const percent = total > 0 ? Math.round((received / total) * 100) : 0;
+        sender.send("launcher:update-progress", { percent, message: `Downloading ${fileName}` });
+      }
+    }
+  } else {
+    chunks.push(Buffer.from(await response.arrayBuffer()));
+    received = chunks[0].length;
+  }
+  fs.writeFileSync(destination, Buffer.concat(chunks));
+  if (sender) sender.send("launcher:update-progress", { percent: 100, message: "Update downloaded" });
+
+  return { ...update, downloaded: true, installerPath: destination, size: received };
+}
+
+function installLauncherUpdate(installerPath) {
+  const resolved = path.resolve(String(installerPath || ""));
+  if (!resolved.startsWith(path.resolve(updatesRoot))) throw new Error("Update installer must be inside the launcher updates folder.");
+  if (!fs.existsSync(resolved)) throw new Error("Downloaded update installer was not found.");
+  spawn(resolved, [], { detached: true, stdio: "ignore" }).unref();
+  app.quit();
+  return true;
 }
 
 function readAccounts() {
@@ -1924,6 +2035,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 620,
     title: "Dreame Launcher",
+    icon: launcherIconPath,
     backgroundColor: "#0b0d12",
     autoHideMenuBar: true,
     titleBarStyle: "hidden",
@@ -1967,6 +2079,8 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("launcher:get-state", () => ({
   dataPath: appDataRoot,
+  version: app.getVersion(),
+  updateRepo: githubUpdateRepo,
   settings: readSettings(),
   accounts: readAccounts().accounts,
   skins: readSkinsForRenderer(),
@@ -1993,6 +2107,12 @@ ipcMain.handle("launcher:copy-text", (_event, text) => {
   clipboard.writeText(String(text || ""));
   return true;
 });
+
+ipcMain.handle("launcher:check-update", () => checkForLauncherUpdate());
+
+ipcMain.handle("launcher:download-update", (event) => downloadLauncherUpdate(event.sender));
+
+ipcMain.handle("launcher:install-update", (_event, installerPath) => installLauncherUpdate(installerPath));
 
 ipcMain.handle("instances:list", () => readInstances().instances);
 
@@ -2199,6 +2319,30 @@ function libraryPathFromName(name) {
   return path.join(...group.split("."), artifact, version, `${artifact}-${version}.jar`);
 }
 
+function libraryKeyFromName(name) {
+  const [group, artifact] = String(name || "").split(":");
+  return group && artifact ? `${group}:${artifact}` : "";
+}
+
+function dedupeLibraries(libraries = []) {
+  const keyed = new Map();
+  const output = [];
+  for (const library of libraries) {
+    const key = libraryKeyFromName(library?.name);
+    if (!key) {
+      output.push(library);
+      continue;
+    }
+    if (keyed.has(key)) {
+      output[keyed.get(key)] = library;
+    } else {
+      keyed.set(key, output.length);
+      output.push(library);
+    }
+  }
+  return output.filter(Boolean);
+}
+
 function mavenUrlFromName(baseUrl, name) {
   return `${baseUrl.replace(/\/?$/, "/")}${libraryPathFromName(name).replaceAll("\\", "/")}`;
 }
@@ -2345,10 +2489,10 @@ async function resolveLaunchProfile(instance, options = {}) {
             ...(fabricProfile.arguments?.jvm || [])
           ]
         },
-        libraries: [
+        libraries: dedupeLibraries([
           ...(base.profile.libraries || []),
           ...(fabricProfile.libraries || [])
-        ],
+        ]),
         downloads: base.profile.downloads,
         assetIndex: base.profile.assetIndex,
         assets: base.profile.assets
@@ -2403,12 +2547,14 @@ async function extractNative(zipPath, destination) {
 
 async function prepareLibraries(profile, instance, nativeDir, updateProgress) {
   const classpath = [];
+  const classpathKeys = new Set();
   const librariesRoot = path.join(appDataRoot, "libraries");
-  const libraries = profile.libraries || [];
+  const libraries = dedupeLibraries(profile.libraries || []);
 
   for (let libraryIndex = 0; libraryIndex < libraries.length; libraryIndex += 1) {
     const library = libraries[libraryIndex];
     if (!libraryAllowed(library)) continue;
+    const classpathKey = libraryKeyFromName(library.name);
 
     const artifact = library.downloads?.artifact;
     if (artifact?.url) {
@@ -2417,12 +2563,18 @@ async function prepareLibraries(profile, instance, nativeDir, updateProgress) {
         sha1: artifact.sha1,
         size: artifact.size
       });
-      classpath.push(destination);
+      if (!classpathKey || !classpathKeys.has(classpathKey)) {
+        if (classpathKey) classpathKeys.add(classpathKey);
+        classpath.push(destination);
+      }
     } else if (library.url && library.name) {
       const relativePath = libraryPathFromName(library.name);
       const destination = path.join(librariesRoot, relativePath);
       await downloadFile(mavenUrlFromName(library.url, library.name), destination, instance, library.name);
-      classpath.push(destination);
+      if (!classpathKey || !classpathKeys.has(classpathKey)) {
+        if (classpathKey) classpathKeys.add(classpathKey);
+        classpath.push(destination);
+      }
     }
 
     const nativeKey = library.natives?.windows?.replace("${arch}", "64");

@@ -198,9 +198,16 @@ button:active:not(:disabled) {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  font-weight: 900;
-  box-shadow: 0 12px 32px rgba(var(--accent-rgb), 0.42);
+  overflow: hidden;
+  background: rgba(var(--accent-rgb), 0.18);
+  box-shadow: 0 14px 34px rgba(var(--accent-rgb), 0.38);
+}
+
+.mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand strong,
@@ -1673,6 +1680,28 @@ h2 {
   background-size: 180% 100%;
   animation: progressShimmer 1.6s linear infinite;
   transition: width var(--smooth) var(--ease-out);
+}
+
+.update-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.update-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -35% 38%;
+  height: 110px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 68%);
+}
+
+.update-panel .login-actions,
+.update-panel .player-display,
+.update-panel .auth-status,
+.update-panel .modal-progress {
+  position: relative;
+  z-index: 1;
 }
 
 .config-grid {

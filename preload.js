@@ -6,6 +6,14 @@ contextBridge.exposeInMainWorld("dreame", {
   openDataFolder: () => ipcRenderer.invoke("launcher:open-data-folder"),
   copyText: (text) => ipcRenderer.invoke("launcher:copy-text", text),
   setTitleBarColor: (color) => ipcRenderer.invoke("launcher:set-titlebar-color", color),
+  checkUpdate: () => ipcRenderer.invoke("launcher:check-update"),
+  downloadUpdate: () => ipcRenderer.invoke("launcher:download-update"),
+  installUpdate: (installerPath) => ipcRenderer.invoke("launcher:install-update", installerPath),
+  onUpdateProgress: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("launcher:update-progress", listener);
+    return () => ipcRenderer.removeListener("launcher:update-progress", listener);
+  },
   createOfflineAccount: (name) => ipcRenderer.invoke("auth:create-offline-account", name),
   selectAccount: (accountId) => ipcRenderer.invoke("auth:select-account", accountId),
   removeAccount: (accountId) => ipcRenderer.invoke("auth:remove-account", accountId),

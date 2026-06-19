@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dreame Launcher</title>
+    <link rel="icon" href="assets/logo.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,7 +13,7 @@
     <main class="shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="mark">D</div>
+          <div class="mark" aria-hidden="true"><img src="assets/logo.png" alt="" /></div>
           <div>
             <strong>Dreame</strong>
             <span>Launcher</span>
@@ -102,6 +103,26 @@
               Custom
               <input id="accent" type="color" />
             </label>
+          </article>
+
+          <article class="panel update-panel">
+            <h3>Updates</h3>
+            <div class="player-display">
+              <span>Launcher version</span>
+              <strong id="launcherVersion">Checking...</strong>
+            </div>
+            <p id="updateStatus" class="auth-status">Check GitHub Releases for a new launcher build.</p>
+            <div id="updateProgress" class="modal-progress" hidden>
+              <div>
+                <span id="updateProgressLabel">Downloading update...</span>
+                <strong id="updateProgressPercent">0%</strong>
+              </div>
+              <div class="modal-progress-track"><span id="updateProgressFill"></span></div>
+            </div>
+            <div class="login-actions">
+              <button id="checkUpdateButton" class="mini-button ghost" type="button">Check Update</button>
+              <button id="installUpdateButton" class="mini-button" type="button" hidden>Install Update</button>
+            </div>
           </article>
         </section>
 

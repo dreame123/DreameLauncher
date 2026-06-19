@@ -8,6 +8,14 @@ const accountAvatar = document.querySelector("#accountAvatar");
 const accountName = document.querySelector("#accountName");
 const accountType = document.querySelector("#accountType");
 const authStatus = document.querySelector("#authStatus");
+const launcherVersion = document.querySelector("#launcherVersion");
+const updateStatus = document.querySelector("#updateStatus");
+const updateProgress = document.querySelector("#updateProgress");
+const updateProgressLabel = document.querySelector("#updateProgressLabel");
+const updateProgressPercent = document.querySelector("#updateProgressPercent");
+const updateProgressFill = document.querySelector("#updateProgressFill");
+const checkUpdateButton = document.querySelector("#checkUpdateButton");
+const installUpdateButton = document.querySelector("#installUpdateButton");
 const microsoftLogin = document.querySelector("#microsoftLogin");
 const xalLogin = document.querySelector("#xalLogin");
 const offlineLogin = document.querySelector("#offlineLogin");
@@ -130,6 +138,7 @@ let skinDragStart = null;
 const refreshedProfileSkinAccounts = new Set();
 const launchProgressByInstance = new Map();
 let deviceCodeCopyTimer = null;
+let downloadedUpdateInstaller = "";
 let skinSpinFrame = null;
 let skinViewer = null;
 let skinThumbViewers = [];
@@ -336,6 +345,59 @@ function queueSave() {
     const settings = await window.dreame.saveSettings(collectSettings());
     profileName.textContent = settings.playerName;
   }, 180);
+}
+
+function setUpdateProgress(percent, message) {
+  const value = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+  updateProgress.hidden = false;
+  updateProgressLabel.textContent = message || "Downloading update...";
+  updateProgressPercent.textContent = `${value}%`;
+  updateProgressFill.style.width = `${value}%`;
+}
+
+function resetUpdateProgress() {
+  updateProgress.hidden = true;
+  updateProgressFill.style.width = "0%";
+  updateProgressPercent.textContent = "0%";
+  updateProgressLabel.textContent = "Downloading update...";
+}
+
+async function checkLauncherUpdate({ download = false } = {}) {
+  if (!window.dreame.checkUpdate) return;
+  downloadedUpdateInstaller = "";
+  installUpdateButton.hidden = true;
+  checkUpdateButton.disabled = true;
+  checkUpdateButton.textContent = download ? "Downloading..." : "Checking...";
+  updateStatus.textContent = download ? "Checking GitHub before downloading..." : "Checking GitHub Releases...";
+  if (!download) resetUpdateProgress();
+
+  try {
+    const result = download ? await window.dreame.downloadUpdate() : await window.dreame.checkUpdate();
+    launcherVersion.textContent = result.currentVersion ? `v${result.currentVersion}` : "Unknown";
+    if (!result.available) {
+      updateStatus.textContent = result.message || "Dreame Launcher is up to date.";
+      return result;
+    }
+
+    if (result.downloaded) {
+      downloadedUpdateInstaller = result.installerPath;
+      updateStatus.textContent = `Downloaded ${result.releaseName || `v${result.latestVersion}`}. Ready to install.`;
+      installUpdateButton.hidden = false;
+      checkUpdateButton.textContent = "Download Again";
+      return result;
+    }
+
+    updateStatus.textContent = `Update available: v${result.latestVersion}.`;
+    checkUpdateButton.textContent = "Download Update";
+    return result;
+  } catch (error) {
+    updateStatus.textContent = error.message;
+    return null;
+  } finally {
+    checkUpdateButton.disabled = false;
+    if (!download && checkUpdateButton.textContent === "Checking...") checkUpdateButton.textContent = "Check Update";
+    if (download && checkUpdateButton.textContent === "Downloading...") checkUpdateButton.textContent = "Download Update";
+  }
 }
 
 function isMinecraftAccount(account) {
@@ -2093,6 +2155,7 @@ async function hydrate() {
   activeAccountId = settings.activeAccountId;
 
   dataPath.textContent = state.dataPath;
+  launcherVersion.textContent = state.version ? `v${state.version}` : "Unknown";
   applyTheme(settings.theme || "color");
   applyAccent(settings.accent);
   setActiveAccount(accounts.find((account) => account.id === settings.activeAccountId));
@@ -2103,6 +2166,7 @@ async function hydrate() {
   renderRecentServers();
   renderSkins();
   updateSkinRotation();
+  checkLauncherUpdate().catch(() => {});
 }
 
 accentInput.addEventListener("input", () => {
@@ -2118,6 +2182,29 @@ themeOptions.querySelectorAll("button").forEach((button) => {
 });
 
 openDataFolder.addEventListener("click", () => window.dreame.openDataFolder());
+
+checkUpdateButton.addEventListener("click", async () => {
+  if (checkUpdateButton.textContent.includes("Download")) {
+    await checkLauncherUpdate({ download: true });
+    return;
+  }
+  await checkLauncherUpdate();
+});
+
+installUpdateButton.addEventListener("click", async () => {
+  if (!downloadedUpdateInstaller) {
+    updateStatus.textContent = "Download the update first.";
+    return;
+  }
+  installUpdateButton.disabled = true;
+  updateStatus.textContent = "Starting installer...";
+  try {
+    await window.dreame.installUpdate(downloadedUpdateInstaller);
+  } catch (error) {
+    installUpdateButton.disabled = false;
+    updateStatus.textContent = error.message;
+  }
+});
 
 navItems.forEach((item) => item.addEventListener("click", () => showView(item.dataset.view)));
 
@@ -2580,6 +2667,12 @@ if (window.dreame.onModrinthInstallProgress) {
       payload?.percent || 1,
       payload?.message || "Installing"
     );
+  });
+}
+
+if (window.dreame.onUpdateProgress) {
+  window.dreame.onUpdateProgress((payload) => {
+    setUpdateProgress(payload?.percent || 0, payload?.message || "Downloading update...");
   });
 }
 
