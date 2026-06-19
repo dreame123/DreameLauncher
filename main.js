@@ -227,31 +227,82 @@ function installLauncherUpdate(installerPath) {
   if (!fs.existsSync(resolved)) throw new Error("Downloaded update installer was not found.");
 
   const helperPath = path.join(updatesRoot, "run-update.ps1");
+  const helperLogPath = path.join(updatesRoot, "run-update.log");
   const currentExe = app.isPackaged ? process.execPath : "";
+  const currentPid = process.pid;
   const helper = `
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $installer = ${JSON.stringify(resolved)}
 $currentExe = ${JSON.stringify(currentExe)}
-Start-Process -FilePath $installer -ArgumentList "/S" -Wait
-$deadline = (Get-Date).AddSeconds(30)
+$oldPid = ${JSON.stringify(currentPid)}
+$logPath = ${JSON.stringify(helperLogPath)}
+function Write-UpdateLog($message) {
+  $stamp = (Get-Date).ToString("s")
+  Add-Content -Path $logPath -Value "[$stamp] $message"
+}
+function Add-Candidate([System.Collections.Generic.List[string]]$list, $value) {
+  $candidate = [string]$value
+  if ([string]::IsNullOrWhiteSpace($candidate)) { return }
+  $candidate = $candidate.Trim().Trim('"')
+  if ($candidate -match ',\\d+$') { $candidate = $candidate -replace ',\\d+$', '' }
+  if (-not $list.Contains($candidate)) { [void]$list.Add($candidate) }
+}
+Write-UpdateLog "Starting update helper."
+Write-UpdateLog "Installer: $installer"
+try {
+  if ($oldPid -gt 0) {
+    Write-UpdateLog "Waiting for old launcher process $oldPid to exit."
+    Wait-Process -Id $oldPid -Timeout 20 -ErrorAction SilentlyContinue
+  }
+  $arguments = @("/S", "/currentuser")
+  Write-UpdateLog "Running installer silently."
+  $process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru
+  Write-UpdateLog "Installer exited with code $($process.ExitCode)."
+} catch {
+  Write-UpdateLog "Installer error: $($_.Exception.Message)"
+}
+Start-Sleep -Seconds 2
 $launched = $false
-$candidates = @(
-  $currentExe,
-  "$env:LOCALAPPDATA\\Programs\\Dreame Launcher\\Dreame Launcher.exe",
-  "$env:LOCALAPPDATA\\Programs\\dreame-launcher\\Dreame Launcher.exe",
-  "$env:ProgramFiles\\Dreame Launcher\\Dreame Launcher.exe",
-  "\${env:ProgramFiles(x86)}\\Dreame Launcher\\Dreame Launcher.exe"
-)
+$candidates = New-Object 'System.Collections.Generic.List[string]'
+Add-Candidate $candidates $currentExe
+foreach ($root in @(
+  "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
+  "HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
+  "HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*"
+)) {
+  try {
+    Get-ItemProperty $root -ErrorAction SilentlyContinue |
+      Where-Object { $_.DisplayName -like "Dreame Launcher*" } |
+      ForEach-Object {
+        if ($_.InstallLocation) { Add-Candidate $candidates (Join-Path $_.InstallLocation "Dreame Launcher.exe") }
+        if ($_.DisplayIcon) { Add-Candidate $candidates $_.DisplayIcon }
+      }
+  } catch {
+    Write-UpdateLog ("Registry lookup failed at " + $root + ": " + $_.Exception.Message)
+  }
+}
+Add-Candidate $candidates "$env:LOCALAPPDATA\\Programs\\Dreame Launcher\\Dreame Launcher.exe"
+Add-Candidate $candidates "$env:LOCALAPPDATA\\Programs\\dreame-launcher\\Dreame Launcher.exe"
+Add-Candidate $candidates "$env:ProgramFiles\\Dreame Launcher\\Dreame Launcher.exe"
+Add-Candidate $candidates "\${env:ProgramFiles(x86)}\\Dreame Launcher\\Dreame Launcher.exe"
+try {
+  Get-ChildItem "$env:LOCALAPPDATA\\Programs" -Filter "Dreame Launcher.exe" -Recurse -ErrorAction SilentlyContinue |
+    ForEach-Object { Add-Candidate $candidates $_.FullName }
+} catch {}
+Write-UpdateLog "Launch candidates: $($candidates -join ' | ')"
+$deadline = (Get-Date).AddSeconds(60)
 while ((Get-Date) -lt $deadline -and -not $launched) {
   foreach ($candidate in $candidates) {
     if ($candidate -and (Test-Path $candidate)) {
-      Start-Process -FilePath $candidate
+      Write-UpdateLog "Launching $candidate"
+      Start-Process -FilePath $candidate -WorkingDirectory (Split-Path -Parent $candidate)
       $launched = $true
       break
     }
   }
   if (-not $launched) { Start-Sleep -Milliseconds 500 }
 }
+if (-not $launched) { Write-UpdateLog "Could not find installed launcher to relaunch." }
 `;
   fs.writeFileSync(helperPath, helper.trim(), "utf8");
   spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helperPath], {
