@@ -2411,7 +2411,7 @@ function libraryKeyFromName(name) {
 }
 
 function libraryClasspathKey(library) {
-  return library?.downloads?.artifact?.path || libraryKeyFromName(library?.name);
+  return libraryKeyFromName(library?.name) || library?.downloads?.artifact?.path || "";
 }
 
 function dedupeLibraries(libraries = []) {
