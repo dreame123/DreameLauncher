@@ -222,9 +222,42 @@ async function downloadLauncherUpdate(sender = null) {
 
 function installLauncherUpdate(installerPath) {
   const resolved = path.resolve(String(installerPath || ""));
-  if (!resolved.startsWith(path.resolve(updatesRoot))) throw new Error("Update installer must be inside the launcher updates folder.");
+  const relative = path.relative(path.resolve(updatesRoot), resolved);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("Update installer must be inside the launcher updates folder.");
   if (!fs.existsSync(resolved)) throw new Error("Downloaded update installer was not found.");
-  spawn(resolved, [], { detached: true, stdio: "ignore" }).unref();
+
+  const helperPath = path.join(updatesRoot, "run-update.ps1");
+  const currentExe = app.isPackaged ? process.execPath : "";
+  const helper = `
+$ErrorActionPreference = "Stop"
+$installer = ${JSON.stringify(resolved)}
+$currentExe = ${JSON.stringify(currentExe)}
+Start-Process -FilePath $installer -ArgumentList "/S" -Wait
+$deadline = (Get-Date).AddSeconds(30)
+$launched = $false
+$candidates = @(
+  $currentExe,
+  "$env:LOCALAPPDATA\\Programs\\Dreame Launcher\\Dreame Launcher.exe",
+  "$env:LOCALAPPDATA\\Programs\\dreame-launcher\\Dreame Launcher.exe",
+  "$env:ProgramFiles\\Dreame Launcher\\Dreame Launcher.exe",
+  "\${env:ProgramFiles(x86)}\\Dreame Launcher\\Dreame Launcher.exe"
+)
+while ((Get-Date) -lt $deadline -and -not $launched) {
+  foreach ($candidate in $candidates) {
+    if ($candidate -and (Test-Path $candidate)) {
+      Start-Process -FilePath $candidate
+      $launched = $true
+      break
+    }
+  }
+  if (-not $launched) { Start-Sleep -Milliseconds 500 }
+}
+`;
+  fs.writeFileSync(helperPath, helper.trim(), "utf8");
+  spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helperPath], {
+    detached: true,
+    stdio: "ignore"
+  }).unref();
   app.quit();
   return true;
 }
@@ -260,13 +293,20 @@ function readRecentServers() {
 
 function rememberRecentServer(server) {
   const current = readRecentServers();
+  const address = String(server.address || "").trim();
+  if (!address) return current;
+  const id = `${server.instanceId}:${address.toLowerCase()}`;
+  const existing = current.find((item) => item.id === id) || current.find((item) => (
+    item.instanceId === server.instanceId && String(item.address || "").toLowerCase() === address.toLowerCase()
+  )) || {};
   const entry = {
-    id: `${server.instanceId}:${server.address}`,
+    id,
     instanceId: server.instanceId,
-    address: server.address,
-    title: server.title || server.address,
-    iconUrl: server.iconUrl || `https://api.mcsrvstat.us/icon/${encodeURIComponent(server.address)}`,
-    description: server.description || "",
+    address,
+    title: server.title || existing.title || address,
+    iconUrl: server.iconUrl || existing.iconUrl || `https://api.mcsrvstat.us/icon/${encodeURIComponent(address)}`,
+    description: server.description || existing.description || "",
+    source: server.source || "joined",
     lastJoinedAt: new Date().toISOString()
   };
   const servers = [entry, ...current.filter((item) => item.id !== entry.id)].slice(0, 12);
@@ -437,24 +477,7 @@ function readInstanceSavedServers(instance) {
 }
 
 function readRecentServersForRenderer() {
-  const byId = new Map();
-  for (const instance of readInstances().instances) {
-    for (const server of readInstanceSavedServers(instance)) {
-      byId.set(server.id, server);
-    }
-  }
-  for (const server of readRecentServers()) {
-    const existing = byId.get(server.id) || {};
-    byId.set(server.id, {
-      ...existing,
-      ...server,
-      title: server.title || existing.title,
-      iconUrl: server.iconUrl || existing.iconUrl,
-      description: server.description || existing.description || "",
-      lastJoinedAt: server.lastJoinedAt || existing.lastJoinedAt
-    });
-  }
-  return [...byId.values()]
+  return readRecentServers()
     .sort((left, right) => new Date(right.lastJoinedAt || 0) - new Date(left.lastJoinedAt || 0));
 }
 
@@ -2214,6 +2237,55 @@ function writeDebug(instance, message, reset = false) {
   fs.writeFileSync(instanceDebugPath(instance), line, { flag: reset ? "w" : "a" });
 }
 
+function normalizeJoinedServerAddress(host, port) {
+  const cleanedHost = String(host || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\.$/, "");
+  if (!cleanedHost || /\s/.test(cleanedHost)) return "";
+  const cleanedPort = String(port || "").trim();
+  if (!cleanedPort || cleanedPort === "25565" || cleanedHost.includes(":")) return cleanedHost;
+  return `${cleanedHost}:${cleanedPort}`;
+}
+
+function findJoinedServersInLog(message) {
+  const text = String(message || "");
+  const servers = [];
+  const patterns = [
+    /Connecting to ([^,\r\n]+),\s*(\d+)/gi,
+    /Connecting to server ([^,\r\n]+?)(?:,\s*(\d+))?(?:\r?\n|$)/gi,
+    /Joining server ([^\s,\r\n]+)(?:,?\s*(\d+))?/gi
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(text))) {
+      const address = normalizeJoinedServerAddress(match[1], match[2]);
+      if (address && !servers.includes(address)) servers.push(address);
+    }
+  }
+  return servers;
+}
+
+function rememberJoinedServersFromLog(instance, message, sender = null) {
+  const joined = findJoinedServersInLog(message);
+  if (joined.length === 0) return;
+  let servers = readRecentServers();
+  for (const address of joined) {
+    servers = rememberRecentServer({
+      instanceId: instance.id,
+      address,
+      title: "Minecraft Server",
+      description: address,
+      source: "joined-log"
+    });
+    writeDebug(instance, `Remembered joined server: ${address}`);
+  }
+  if (sender && !sender.isDestroyed?.()) {
+    sender.send("servers:recent-updated", readRecentServersForRenderer());
+  }
+}
+
 function createLaunchProgress(sender, instance) {
   let current = 0;
   return (percent, message) => {
@@ -2314,21 +2386,39 @@ async function downloadFile(url, destination, instance, label, onProgress, expec
   return destination;
 }
 
+function parseMavenCoordinate(name) {
+  const [group, artifact, rawVersion, rawClassifier] = String(name || "").split(":");
+  const [version, extension = "jar"] = String(rawVersion || "").split("@");
+  const [classifier, classifierExtension = extension] = String(rawClassifier || "").split("@");
+  return {
+    group,
+    artifact,
+    version,
+    classifier,
+    extension: classifier ? classifierExtension : extension
+  };
+}
+
 function libraryPathFromName(name) {
-  const [group, artifact, version] = name.split(":");
-  return path.join(...group.split("."), artifact, version, `${artifact}-${version}.jar`);
+  const { group, artifact, version, classifier, extension } = parseMavenCoordinate(name);
+  const suffix = classifier ? `-${classifier}` : "";
+  return path.join(...group.split("."), artifact, version, `${artifact}-${version}${suffix}.${extension || "jar"}`);
 }
 
 function libraryKeyFromName(name) {
-  const [group, artifact] = String(name || "").split(":");
-  return group && artifact ? `${group}:${artifact}` : "";
+  const { group, artifact, classifier } = parseMavenCoordinate(name);
+  return group && artifact ? `${group}:${artifact}:${classifier || ""}` : "";
+}
+
+function libraryClasspathKey(library) {
+  return library?.downloads?.artifact?.path || libraryKeyFromName(library?.name);
 }
 
 function dedupeLibraries(libraries = []) {
   const keyed = new Map();
   const output = [];
   for (const library of libraries) {
-    const key = libraryKeyFromName(library?.name);
+    const key = libraryClasspathKey(library);
     if (!key) {
       output.push(library);
       continue;
@@ -2554,7 +2644,7 @@ async function prepareLibraries(profile, instance, nativeDir, updateProgress) {
   for (let libraryIndex = 0; libraryIndex < libraries.length; libraryIndex += 1) {
     const library = libraries[libraryIndex];
     if (!libraryAllowed(library)) continue;
-    const classpathKey = libraryKeyFromName(library.name);
+    const classpathKey = libraryClasspathKey(library);
 
     const artifact = library.downloads?.artifact;
     if (artifact?.url) {
@@ -2879,8 +2969,16 @@ async function launchInstance(instanceId, launchOptions = {}, sender = null) {
   runningProcesses.set(instance.id, child);
   updateProgress(100, "Minecraft launched");
 
-  child.stdout.on("data", (data) => writeDebug(instance, data.toString()));
-  child.stderr.on("data", (data) => writeDebug(instance, data.toString()));
+  child.stdout.on("data", (data) => {
+    const text = data.toString();
+    writeDebug(instance, text);
+    rememberJoinedServersFromLog(instance, text, sender);
+  });
+  child.stderr.on("data", (data) => {
+    const text = data.toString();
+    writeDebug(instance, text);
+    rememberJoinedServersFromLog(instance, text, sender);
+  });
   child.on("error", (error) => {
     runningProcesses.delete(instance.id);
     if (error.code === "ENOENT") {

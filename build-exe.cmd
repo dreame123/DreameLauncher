@@ -71,5 +71,15 @@ if errorlevel 1 (
 
 echo.
 echo Done. Your EXE installer is in the dist folder.
+echo Opening the newest installer now...
+echo.
+
+for /f "delims=" %%I in ('dir /b /a-d /o-d "%~dp0dist\Dreame Launcher Setup *.exe" 2^>nul') do (
+  start "" "%~dp0dist\%%I"
+  goto opened_installer
+)
+
+echo Could not find the installer EXE in dist.
+:opened_installer
 echo.
 pause

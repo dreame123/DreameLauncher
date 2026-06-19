@@ -9,6 +9,7 @@ const accountName = document.querySelector("#accountName");
 const accountType = document.querySelector("#accountType");
 const authStatus = document.querySelector("#authStatus");
 const launcherVersion = document.querySelector("#launcherVersion");
+const updatePanel = document.querySelector(".update-panel");
 const updateStatus = document.querySelector("#updateStatus");
 const updateProgress = document.querySelector("#updateProgress");
 const updateProgressLabel = document.querySelector("#updateProgressLabel");
@@ -16,6 +17,11 @@ const updateProgressPercent = document.querySelector("#updateProgressPercent");
 const updateProgressFill = document.querySelector("#updateProgressFill");
 const checkUpdateButton = document.querySelector("#checkUpdateButton");
 const installUpdateButton = document.querySelector("#installUpdateButton");
+const updateToast = document.querySelector("#updateToast");
+const updateToastTitle = document.querySelector("#updateToastTitle");
+const updateToastMessage = document.querySelector("#updateToastMessage");
+const updateToastInstall = document.querySelector("#updateToastInstall");
+const updateToastClose = document.querySelector("#updateToastClose");
 const microsoftLogin = document.querySelector("#microsoftLogin");
 const xalLogin = document.querySelector("#xalLogin");
 const offlineLogin = document.querySelector("#offlineLogin");
@@ -139,6 +145,7 @@ const refreshedProfileSkinAccounts = new Set();
 const launchProgressByInstance = new Map();
 let deviceCodeCopyTimer = null;
 let downloadedUpdateInstaller = "";
+let pendingLauncherUpdate = null;
 let skinSpinFrame = null;
 let skinViewer = null;
 let skinThumbViewers = [];
@@ -362,33 +369,65 @@ function resetUpdateProgress() {
   updateProgressLabel.textContent = "Downloading update...";
 }
 
+function showUpdateToast(update) {
+  if (!updateToast || !update?.available) return;
+  updateToastTitle.textContent = `Update v${update.latestVersion} is ready`;
+  updateToastMessage.textContent = "Install it now and Dreame will reopen when it finishes.";
+  updateToast.hidden = false;
+  requestAnimationFrame(() => updateToast.classList.add("visible"));
+}
+
+function hideUpdateToast() {
+  if (!updateToast) return;
+  updateToast.classList.remove("visible");
+  window.setTimeout(() => {
+    if (!updateToast.classList.contains("visible")) updateToast.hidden = true;
+  }, 220);
+}
+
 async function checkLauncherUpdate({ download = false } = {}) {
   if (!window.dreame.checkUpdate) return;
-  downloadedUpdateInstaller = "";
-  installUpdateButton.hidden = true;
+  if (!download) {
+    downloadedUpdateInstaller = "";
+    pendingLauncherUpdate = null;
+    installUpdateButton.hidden = true;
+    installUpdateButton.disabled = false;
+    installUpdateButton.textContent = "Install Update";
+  }
   checkUpdateButton.disabled = true;
   checkUpdateButton.textContent = download ? "Downloading..." : "Checking...";
-  updateStatus.textContent = download ? "Checking GitHub before downloading..." : "Checking GitHub Releases...";
+  updateStatus.textContent = download ? "Downloading update..." : "Checking GitHub Releases...";
   if (!download) resetUpdateProgress();
 
   try {
     const result = download ? await window.dreame.downloadUpdate() : await window.dreame.checkUpdate();
     launcherVersion.textContent = result.currentVersion ? `v${result.currentVersion}` : "Unknown";
     if (!result.available) {
+      updatePanel?.classList.remove("is-update-ready");
+      hideUpdateToast();
       updateStatus.textContent = result.message || "Dreame Launcher is up to date.";
       return result;
     }
 
     if (result.downloaded) {
       downloadedUpdateInstaller = result.installerPath;
-      updateStatus.textContent = `Downloaded ${result.releaseName || `v${result.latestVersion}`}. Ready to install.`;
+      pendingLauncherUpdate = result;
+      updatePanel?.classList.add("is-update-ready");
+      showUpdateToast(result);
+      updateStatus.textContent = `Downloaded ${result.releaseName || `v${result.latestVersion}`}. Starting installer...`;
       installUpdateButton.hidden = false;
-      checkUpdateButton.textContent = "Download Again";
+      checkUpdateButton.textContent = "Check Update";
       return result;
     }
 
-    updateStatus.textContent = `Update available: v${result.latestVersion}.`;
-    checkUpdateButton.textContent = "Download Update";
+    pendingLauncherUpdate = result;
+    updatePanel?.classList.add("is-update-ready");
+    showUpdateToast(result);
+    updateStatus.textContent = `Update available: v${result.latestVersion}. Click Install Update to download and install it.`;
+    installUpdateButton.hidden = false;
+    installUpdateButton.disabled = false;
+    installUpdateButton.textContent = "Install Update";
+    checkUpdateButton.textContent = "Check Again";
     return result;
   } catch (error) {
     updateStatus.textContent = error.message;
@@ -396,7 +435,36 @@ async function checkLauncherUpdate({ download = false } = {}) {
   } finally {
     checkUpdateButton.disabled = false;
     if (!download && checkUpdateButton.textContent === "Checking...") checkUpdateButton.textContent = "Check Update";
-    if (download && checkUpdateButton.textContent === "Downloading...") checkUpdateButton.textContent = "Download Update";
+    if (download && checkUpdateButton.textContent === "Downloading...") checkUpdateButton.textContent = "Check Update";
+  }
+}
+
+async function installLatestLauncherUpdate() {
+  if (!window.dreame.installUpdate) return;
+  installUpdateButton.disabled = true;
+  checkUpdateButton.disabled = true;
+  updateToastInstall.disabled = true;
+  installUpdateButton.textContent = "Installing...";
+  updateToastInstall.textContent = "Installing...";
+  try {
+    let installerPath = downloadedUpdateInstaller;
+    if (!installerPath) {
+      const result = await checkLauncherUpdate({ download: true });
+      if (!result?.downloaded || !result.installerPath) {
+        throw new Error("Could not download the update installer.");
+      }
+      installerPath = result.installerPath;
+    }
+    updateStatus.textContent = "Starting installer...";
+    await window.dreame.installUpdate(installerPath);
+  } catch (error) {
+    installUpdateButton.disabled = false;
+    checkUpdateButton.disabled = false;
+    updateToastInstall.disabled = false;
+    installUpdateButton.textContent = "Install Update";
+    updateToastInstall.textContent = "Install";
+    updateStatus.textContent = error.message;
+    updateToastMessage.textContent = error.message;
   }
 }
 
@@ -551,7 +619,7 @@ function renderRecentServers() {
   if (available.length === 0) {
     const empty = document.createElement("div");
     empty.className = "recent-servers-empty";
-    empty.innerHTML = "<strong>No servers yet</strong><span>Join a saved Minecraft server or launch one from Explore, then it appears here.</span>";
+    empty.innerHTML = "<strong>No joined servers yet</strong><span>Join a server in Minecraft or launch one from Explore, then it appears here.</span>";
     recentServersList.append(empty);
     return;
   }
@@ -2184,26 +2252,19 @@ themeOptions.querySelectorAll("button").forEach((button) => {
 openDataFolder.addEventListener("click", () => window.dreame.openDataFolder());
 
 checkUpdateButton.addEventListener("click", async () => {
-  if (checkUpdateButton.textContent.includes("Download")) {
-    await checkLauncherUpdate({ download: true });
-    return;
-  }
   await checkLauncherUpdate();
 });
 
 installUpdateButton.addEventListener("click", async () => {
-  if (!downloadedUpdateInstaller) {
-    updateStatus.textContent = "Download the update first.";
-    return;
-  }
-  installUpdateButton.disabled = true;
-  updateStatus.textContent = "Starting installer...";
-  try {
-    await window.dreame.installUpdate(downloadedUpdateInstaller);
-  } catch (error) {
-    installUpdateButton.disabled = false;
-    updateStatus.textContent = error.message;
-  }
+  await installLatestLauncherUpdate();
+});
+
+updateToastInstall.addEventListener("click", async () => {
+  await installLatestLauncherUpdate();
+});
+
+updateToastClose.addEventListener("click", () => {
+  hideUpdateToast();
 });
 
 navItems.forEach((item) => item.addEventListener("click", () => showView(item.dataset.view)));
@@ -2673,6 +2734,13 @@ if (window.dreame.onModrinthInstallProgress) {
 if (window.dreame.onUpdateProgress) {
   window.dreame.onUpdateProgress((payload) => {
     setUpdateProgress(payload?.percent || 0, payload?.message || "Downloading update...");
+  });
+}
+
+if (window.dreame.onRecentServersUpdated) {
+  window.dreame.onRecentServersUpdated((servers) => {
+    recentServers = Array.isArray(servers) ? servers : recentServers;
+    renderRecentServers();
   });
 }
 

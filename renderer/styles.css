@@ -1685,6 +1685,7 @@ h2 {
 .update-panel {
   position: relative;
   overflow: hidden;
+  transition: border-color var(--smooth) var(--ease-out), box-shadow var(--smooth) var(--ease-out), transform var(--smooth) var(--ease-out);
 }
 
 .update-panel::after {
@@ -1696,12 +1697,38 @@ h2 {
   background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 68%);
 }
 
+.update-panel.is-update-ready {
+  border-color: rgba(var(--accent-rgb), 0.7);
+  box-shadow: 0 24px 70px rgba(var(--accent-rgb), 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.update-panel.is-update-ready::after {
+  height: 180px;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.32), transparent 70%);
+}
+
+.update-panel.is-update-ready #installUpdateButton {
+  animation: updatePulse 1.8s var(--ease-out) infinite;
+}
+
 .update-panel .login-actions,
 .update-panel .player-display,
 .update-panel .auth-status,
 .update-panel .modal-progress {
   position: relative;
   z-index: 1;
+}
+
+@keyframes updatePulse {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.22);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 42px rgba(var(--accent-rgb), 0.34);
+  }
 }
 
 .config-grid {
@@ -2596,6 +2623,77 @@ input[type="range"] {
   }
 }
 
+.update-toast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 80;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(28, 28, 31, 0.94), rgba(var(--accent-rgb), 0.22));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 42px rgba(var(--accent-rgb), 0.18);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  transition: opacity var(--smooth) var(--ease-out), transform var(--smooth) var(--ease-spring);
+}
+
+.update-toast[hidden] {
+  display: none;
+}
+
+.update-toast.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.update-toast-glow {
+  position: absolute;
+  inset: -40% -20% auto 35%;
+  height: 150px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.45), transparent 68%);
+}
+
+.update-toast-copy,
+.update-toast .mini-button,
+.update-toast .round-button {
+  position: relative;
+  z-index: 1;
+}
+
+.update-toast-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.update-toast-copy span,
+.update-toast-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.update-toast-copy strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.update-toast .round-button {
+  width: 34px;
+  height: 34px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2819,5 +2917,17 @@ input[type="range"] {
 
   .login-actions {
     grid-template-columns: 1fr;
+  }
+
+  .update-toast {
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .update-toast .round-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
   }
 }

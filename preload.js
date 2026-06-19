@@ -57,6 +57,11 @@ contextBridge.exposeInMainWorld("dreame", {
   installModrinthFile: (payload) => ipcRenderer.invoke("modrinth:install-file", payload),
   installModrinthPack: (versionId) => ipcRenderer.invoke("modrinth:install-pack", versionId),
   listRecentServers: () => ipcRenderer.invoke("servers:recent"),
+  onRecentServersUpdated: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("servers:recent-updated", listener);
+    return () => ipcRenderer.removeListener("servers:recent-updated", listener);
+  },
   onModrinthInstallProgress: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on("modrinth:install-progress", listener);

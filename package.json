@@ -1,6 +1,6 @@
 {
   "name": "dreame-launcher",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "Dreame Launcher - a smooth custom Minecraft launcher.",
   "main": "main.js",
   "dreame": {
@@ -28,6 +28,12 @@
       "node_modules/skinview3d/assets/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico",
@@ -36,8 +42,13 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Dreame Launcher",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "include": "build/installer-shortcuts.nsh",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
     }
   },
   "pnpm": {
