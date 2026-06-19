@@ -1336,6 +1336,55 @@ function normalizeServerDirectoryEntry(raw) {
   };
 }
 
+function inferServerAddressFromModrinthHit(hit) {
+  const direct = hit.server_address || hit.server_url || hit.address || hit.ip || hit.hostname || hit.host;
+  if (direct) return String(direct).replace(/^minecraft:\/\//i, "").trim();
+
+  const text = [hit.title, hit.description, hit.slug].filter(Boolean).join(" ");
+  const match = text.match(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d{2,5})?\b/i);
+  return match ? match[0] : "";
+}
+
+function modrinthServerHitToExploreHit(hit) {
+  const address = inferServerAddressFromModrinthHit(hit);
+  if (!address) return null;
+
+  return {
+    projectId: hit.project_id || address,
+    slug: hit.slug || address,
+    address,
+    title: hit.title || address,
+    author: hit.author || "Modrinth server",
+    description: hit.description || "Minecraft server listed through Modrinth.",
+    iconUrl: hit.icon_url || `https://api.mcsrvstat.us/icon/${encodeURIComponent(address)}`,
+    projectType: "server",
+    downloads: hit.downloads || 0,
+    follows: hit.follows || 0,
+    versions: hit.versions || [],
+    categories: hit.display_categories || hit.categories || [],
+    dateModified: hit.date_modified || ""
+  };
+}
+
+async function searchModrinthServerProjects({ query = "", offset = 0 }) {
+  const params = new URLSearchParams({
+    query: String(query || ""),
+    limit: "20",
+    offset: String(offset || 0),
+    index: "relevance"
+  });
+  params.set("facets", JSON.stringify([["project_type:server"]]));
+
+  const data = await modrinthGetJson(`search?${params}`);
+  return {
+    type: "servers",
+    offset: data.offset || 0,
+    limit: data.limit || 20,
+    totalHits: data.total_hits || 0,
+    hits: (data.hits || []).map(modrinthServerHitToExploreHit).filter(Boolean)
+  };
+}
+
 async function searchServerDirectory({ query = "", offset = 0 }) {
   const search = String(query || "").trim();
   const limit = 20;
@@ -1345,11 +1394,14 @@ async function searchServerDirectory({ query = "", offset = 0 }) {
     return serverDirectoryCache[cacheKey].result;
   }
 
-  const curatedMatches = searchCuratedServers(search);
-  if (!search || curatedMatches.length) {
-    const result = serverSearchResult(curatedMatches, start, limit);
-    serverDirectoryCache[cacheKey] = { fetchedAt: Date.now(), result };
-    return result;
+  try {
+    const modrinthResult = await searchModrinthServerProjects({ query: search, offset: start });
+    if (modrinthResult.hits.length) {
+      serverDirectoryCache[cacheKey] = { fetchedAt: Date.now(), result: modrinthResult };
+      return modrinthResult;
+    }
+  } catch (error) {
+    console.warn("Modrinth server search did not return usable server results:", error.message);
   }
 
   try {
@@ -1372,20 +1424,22 @@ async function searchServerDirectory({ query = "", offset = 0 }) {
     const servers = (data.servers || data.data || [])
       .map(normalizeServerDirectoryEntry)
       .filter((server) => server && isReadableServerResult(server));
+    const totalHits = Number(data.total || data.totalHits || data.count || data.pagination?.total || servers.length);
     const result = {
       type: "servers",
       offset: start,
       limit,
-      totalHits: servers.length,
+      totalHits: Number.isFinite(totalHits) && totalHits > servers.length ? totalHits : servers.length,
       hits: servers.slice(0, limit).map(serverToExploreHit)
     };
+    if (!result.hits.length) throw new Error("Server directory returned no readable servers.");
     serverDirectoryCache[cacheKey] = { fetchedAt: Date.now(), result };
     return result;
   } catch {
     // Keep the built-in list available when the public directory is unreachable.
   }
 
-  const result = serverSearchResult(serverDirectory, start, limit);
+  const result = serverSearchResult(searchCuratedServers(search), start, limit);
   serverDirectoryCache[cacheKey] = { fetchedAt: Date.now(), result };
   return result;
 }

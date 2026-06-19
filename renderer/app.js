@@ -1266,7 +1266,9 @@ function formatRelativeTime(value) {
 function renderExploreResults() {
   exploreResults.innerHTML = "";
   if (exploreItems.length === 0) {
-    exploreResults.innerHTML = "<p class='empty-accounts'>No Modrinth results yet.</p>";
+    exploreResults.innerHTML = activeExploreType === "servers"
+      ? "<p class='empty-accounts'>No server results yet.</p>"
+      : "<p class='empty-accounts'>No Modrinth results yet.</p>";
     return;
   }
 
@@ -1443,7 +1445,9 @@ function renderExplorePagination() {
 async function searchExplore({ resetPage = false } = {}) {
   try {
     if (resetPage) exploreOffset = 0;
-    exploreStatus.textContent = `Searching Modrinth ${exploreTypeLabel(activeExploreType)}...`;
+    exploreStatus.textContent = activeExploreType === "servers"
+      ? "Searching servers..."
+      : `Searching Modrinth ${exploreTypeLabel(activeExploreType)}...`;
     const result = await window.dreame.searchModrinth({
       type: activeExploreType,
       query: exploreSearch.value.trim(),

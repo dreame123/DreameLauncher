@@ -1,6 +1,6 @@
 {
   "name": "dreame-launcher",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "Dreame Launcher - a smooth custom Minecraft launcher.",
   "main": "main.js",
   "dreame": {
