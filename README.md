@@ -26,7 +26,7 @@ Offline accounts can launch Minecraft, but they cannot join premium/authenticate
 
 ## 🚀 Install
 
-1. Go to the **[Releases](https://github.com/dreame123/DreameLauncher/releases/tag/DLauncher)** page.
+1. Go to the **[Releases](https://github.com/dreame123/DreameLauncher/releases/tag/DLauncher0.2.1)** page.
 2. Download the latest **Dreame Launcher Builder** or installer file.
 3. Run the downloaded file.
 4. Follow the setup window.

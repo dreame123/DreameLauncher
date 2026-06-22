@@ -17,9 +17,21 @@ const launcherIconPath = path.join(__dirname, "renderer", "assets", "logo.png");
 const bundledMicrosoftClientId = process.env.DREAME_MICROSOFT_CLIENT_ID || "00000000402b5328";
 const packageInfo = require("./package.json");
 const githubUpdateRepo = process.env.DREAME_GITHUB_REPO || packageInfo.dreame?.githubRepo || "";
+const electronSessionDataRoot = path.join(appDataRoot, "electron-session");
+const electronDiskCacheRoot = path.join(appDataRoot, "cache", "electron");
 let pendingXalRedirect = null;
 const runningProcesses = new Map();
 const transparentTitleBarColor = "rgba(0, 0, 0, 0)";
+
+try {
+  fs.mkdirSync(electronSessionDataRoot, { recursive: true });
+  fs.mkdirSync(electronDiskCacheRoot, { recursive: true });
+  app.setPath("userData", appDataRoot);
+  app.setPath("sessionData", electronSessionDataRoot);
+  app.commandLine.appendSwitch("disk-cache-dir", electronDiskCacheRoot);
+} catch {
+  // If Windows has the cache locked, Electron can still run without this startup hint.
+}
 
 const defaultSettings = {
   accent: "#7c5cff",
@@ -28,6 +40,7 @@ const defaultSettings = {
   selectedVersion: "Latest Release",
   ram: 4,
   microsoftClientId: "",
+  language: "en",
   activeAccountId: null,
   lastOpenedAt: null
 };
@@ -156,16 +169,39 @@ function pickReleaseInstaller(release) {
 
 async function checkForLauncherUpdate() {
   const repo = getUpdateRepo();
-  const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-    headers: {
-      "Accept": "application/vnd.github+json",
-      "User-Agent": `Dreame-Launcher/${app.getVersion()}`
-    }
-  });
-  if (!response.ok) throw new Error(`Could not check GitHub releases (${response.status}).`);
+  const currentVersion = normalizeVersion(app.getVersion());
+  let response;
+  try {
+    response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": `Dreame-Launcher/${app.getVersion()}`
+      }
+    });
+  } catch (error) {
+    return {
+      available: false,
+      currentVersion,
+      latestVersion: currentVersion,
+      transientError: true,
+      message: `Could not reach GitHub Releases. Try again later. ${error.message}`,
+      repo
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      available: false,
+      currentVersion,
+      latestVersion: currentVersion,
+      transientError: response.status >= 500,
+      message: `Could not check GitHub Releases (${response.status}). Try again later.`,
+      repo
+    };
+  }
+
   const release = await response.json();
   const latestVersion = normalizeVersion(release.tag_name || release.name);
-  const currentVersion = normalizeVersion(app.getVersion());
   const installer = pickReleaseInstaller(release);
   const available = latestVersion && compareVersions(latestVersion, currentVersion) > 0;
 
@@ -220,97 +256,36 @@ async function downloadLauncherUpdate(sender = null) {
   return { ...update, downloaded: true, installerPath: destination, size: received };
 }
 
-function installLauncherUpdate(installerPath) {
+async function installLauncherUpdate(installerPath) {
   const resolved = path.resolve(String(installerPath || ""));
   const relative = path.relative(path.resolve(updatesRoot), resolved);
   if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("Update installer must be inside the launcher updates folder.");
   if (!fs.existsSync(resolved)) throw new Error("Downloaded update installer was not found.");
 
-  const helperPath = path.join(updatesRoot, "run-update.ps1");
   const helperLogPath = path.join(updatesRoot, "run-update.log");
-  const currentExe = app.isPackaged ? process.execPath : "";
-  const currentPid = process.pid;
-  const helper = `
-$ErrorActionPreference = "Continue"
-$installer = ${JSON.stringify(resolved)}
-$currentExe = ${JSON.stringify(currentExe)}
-$oldPid = ${JSON.stringify(currentPid)}
-$logPath = ${JSON.stringify(helperLogPath)}
-function Write-UpdateLog($message) {
-  $stamp = (Get-Date).ToString("s")
-  Add-Content -Path $logPath -Value "[$stamp] $message"
-}
-function Add-Candidate([System.Collections.Generic.List[string]]$list, $value) {
-  $candidate = [string]$value
-  if ([string]::IsNullOrWhiteSpace($candidate)) { return }
-  $candidate = $candidate.Trim().Trim('"')
-  if ($candidate -match ',\\d+$') { $candidate = $candidate -replace ',\\d+$', '' }
-  if (-not $list.Contains($candidate)) { [void]$list.Add($candidate) }
-}
-Write-UpdateLog "Starting update helper."
-Write-UpdateLog "Installer: $installer"
-try {
-  if ($oldPid -gt 0) {
-    Write-UpdateLog "Waiting for old launcher process $oldPid to exit."
-    Wait-Process -Id $oldPid -Timeout 20 -ErrorAction SilentlyContinue
+  const log = (message) => fs.appendFileSync(helperLogPath, `[${new Date().toISOString()}] ${message}\r\n`, "utf8");
+  fs.writeFileSync(helperLogPath, `[${new Date().toISOString()}] Update requested by launcher.\r\nInstaller: ${resolved}\r\n`, "utf8");
+
+  log("Opening installer with Windows shell.");
+  const shellError = await shell.openPath(resolved);
+  if (shellError) {
+    log(`Shell open failed: ${shellError}`);
+    log("Trying detached installer process fallback.");
+    const child = spawn(resolved, [], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false
+    });
+    child.on("error", (error) => {
+      log(`Detached installer fallback failed: ${error.message}`);
+    });
+    child.unref();
+  } else {
+    log("Windows accepted installer launch.");
   }
-  $arguments = @("/S", "/currentuser")
-  Write-UpdateLog "Running installer silently."
-  $process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru
-  Write-UpdateLog "Installer exited with code $($process.ExitCode)."
-} catch {
-  Write-UpdateLog "Installer error: $($_.Exception.Message)"
-}
-Start-Sleep -Seconds 2
-$launched = $false
-$candidates = New-Object 'System.Collections.Generic.List[string]'
-Add-Candidate $candidates $currentExe
-foreach ($root in @(
-  "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
-  "HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
-  "HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*"
-)) {
-  try {
-    Get-ItemProperty $root -ErrorAction SilentlyContinue |
-      Where-Object { $_.DisplayName -like "Dreame Launcher*" } |
-      ForEach-Object {
-        if ($_.InstallLocation) { Add-Candidate $candidates (Join-Path $_.InstallLocation "Dreame Launcher.exe") }
-        if ($_.DisplayIcon) { Add-Candidate $candidates $_.DisplayIcon }
-      }
-  } catch {
-    Write-UpdateLog ("Registry lookup failed at " + $root + ": " + $_.Exception.Message)
-  }
-}
-Add-Candidate $candidates "$env:LOCALAPPDATA\\Programs\\Dreame Launcher\\Dreame Launcher.exe"
-Add-Candidate $candidates "$env:LOCALAPPDATA\\Programs\\dreame-launcher\\Dreame Launcher.exe"
-Add-Candidate $candidates "$env:ProgramFiles\\Dreame Launcher\\Dreame Launcher.exe"
-Add-Candidate $candidates "\${env:ProgramFiles(x86)}\\Dreame Launcher\\Dreame Launcher.exe"
-try {
-  Get-ChildItem "$env:LOCALAPPDATA\\Programs" -Filter "Dreame Launcher.exe" -Recurse -ErrorAction SilentlyContinue |
-    ForEach-Object { Add-Candidate $candidates $_.FullName }
-} catch {}
-Write-UpdateLog "Launch candidates: $($candidates -join ' | ')"
-$deadline = (Get-Date).AddSeconds(60)
-while ((Get-Date) -lt $deadline -and -not $launched) {
-  foreach ($candidate in $candidates) {
-    if ($candidate -and (Test-Path $candidate)) {
-      Write-UpdateLog "Launching $candidate"
-      Start-Process -FilePath $candidate -WorkingDirectory (Split-Path -Parent $candidate)
-      $launched = $true
-      break
-    }
-  }
-  if (-not $launched) { Start-Sleep -Milliseconds 500 }
-}
-if (-not $launched) { Write-UpdateLog "Could not find installed launcher to relaunch." }
-`;
-  fs.writeFileSync(helperPath, helper.trim(), "utf8");
-  spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helperPath], {
-    detached: true,
-    stdio: "ignore"
-  }).unref();
-  app.quit();
-  return true;
+
+  setTimeout(() => app.exit(0), 1200);
+  return { started: true, installerPath: resolved };
 }
 
 function readAccounts() {
@@ -2188,8 +2163,6 @@ function quitIfNoWindowsAndNoMinecraft() {
     app.quit();
   }
 }
-
-app.setPath("userData", appDataRoot);
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);

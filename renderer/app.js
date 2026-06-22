@@ -4,6 +4,12 @@ const openDataFolder = document.querySelector("#openDataFolder");
 const profileName = document.querySelector("#profileName");
 const swatches = document.querySelector("#swatches");
 const themeOptions = document.querySelector("#themeOptions");
+const settingsTabs = document.querySelector("#settingsTabs");
+const appearanceSettings = document.querySelector("#appearanceSettings");
+const languageSettings = document.querySelector("#languageSettings");
+const languageSearch = document.querySelector("#languageSearch");
+const languageList = document.querySelector("#languageList");
+const selectedLanguageLabel = document.querySelector("#selectedLanguageLabel");
 const accountAvatar = document.querySelector("#accountAvatar");
 const accountName = document.querySelector("#accountName");
 const accountType = document.querySelector("#accountType");
@@ -106,8 +112,239 @@ const instanceCreateProgressPercent = document.querySelector("#instanceCreatePro
 const instanceCreateProgressFill = document.querySelector("#instanceCreateProgressFill");
 
 const presetColors = ["#7c5cff", "#00d6c9", "#ff4d8d", "#ffb020", "#39d353", "#4cc9f0"];
+const languages = [
+  { code: "en", name: "English", region: "United States" },
+  { code: "ar", name: "Arabic", native: "العربية", region: "Middle East" },
+  { code: "fr", name: "French", native: "Français", region: "France" },
+  { code: "es", name: "Spanish", native: "Español", region: "Spain / Latin America" },
+  { code: "de", name: "German", native: "Deutsch", region: "Germany" },
+  { code: "it", name: "Italian", native: "Italiano", region: "Italy" },
+  { code: "pt", name: "Portuguese", native: "Português", region: "Brazil / Portugal" },
+  { code: "ru", name: "Russian", native: "Русский", region: "Russia" },
+  { code: "zh", name: "Chinese", native: "中文", region: "China" },
+  { code: "ja", name: "Japanese", native: "日本語", region: "Japan" },
+  { code: "ko", name: "Korean", native: "한국어", region: "Korea" },
+  { code: "nl", name: "Dutch", native: "Nederlands", region: "Netherlands" },
+  { code: "pl", name: "Polish", native: "Polski", region: "Poland" },
+  { code: "tr", name: "Turkish", native: "Türkçe", region: "Turkey" },
+  { code: "sv", name: "Swedish", native: "Svenska", region: "Sweden" },
+  { code: "no", name: "Norwegian", native: "Norsk", region: "Norway" },
+  { code: "da", name: "Danish", native: "Dansk", region: "Denmark" },
+  { code: "fi", name: "Finnish", native: "Suomi", region: "Finland" },
+  { code: "hi", name: "Hindi", native: "हिन्दी", region: "India" },
+  { code: "id", name: "Indonesian", native: "Bahasa Indonesia", region: "Indonesia" },
+  { code: "uk", name: "Ukrainian", native: "Українська", region: "Ukraine" },
+  { code: "cs", name: "Czech", native: "Čeština", region: "Czechia" },
+  { code: "el", name: "Greek", native: "Ελληνικά", region: "Greece" },
+  { code: "ro", name: "Romanian", native: "Română", region: "Romania" }
+];
+const englishTranslations = {
+  "nav.home": "Home",
+  "nav.explore": "Explore",
+  "nav.instances": "Instances",
+  "nav.skin": "Skin",
+  "nav.settings": "Settings",
+  "profile.ready": "Ready to play",
+  "home.eyebrow": "Minecraft desktop launcher",
+  "home.welcome": "Welcome back!",
+  "home.jumpBack": "Jump back in",
+  "home.browseServers": "Browse Servers",
+  "home.launchingServer": "Launching {instance} and joining {server}...",
+  "home.launchedServer": "Minecraft launched with {instance}. Joining {server}.",
+  "home.copyServerAddress": "Copy server address",
+  "home.copiedServer": "Copied {server}.",
+  "home.noJoinedServers": "No joined servers yet",
+  "home.joinServerHelp": "Join a server in Minecraft or launch one from Explore, then it appears here.",
+  "home.played": "Played {time} • {instance}",
+  "common.folder": "Folder",
+  "common.openDataFolder": "Open data folder",
+  "common.refresh": "Refresh",
+  "common.search": "Search",
+  "common.change": "Change",
+  "common.remove": "Remove",
+  "common.clickToCopy": "Click to copy",
+  "common.copied": "Copied",
+  "common.checking": "Checking...",
+  "common.loading": "Loading...",
+  "common.savingTo": "Saving to",
+  "common.unknown": "Unknown",
+  "common.play": "Play",
+  "common.install": "Install",
+  "common.installing": "Installing...",
+  "common.launching": "Launching...",
+  "common.stop": "Stop",
+  "common.stopping": "Stopping...",
+  "common.working": "Working...",
+  "login.title": "Login",
+  "login.noAccount": "No account selected",
+  "login.addAccount": "Add Microsoft or local offline",
+  "login.microsoft": "Microsoft Login",
+  "login.xal": "Sisu/XAL Login",
+  "login.offline": "Offline Account",
+  "login.enterCode": "Enter this code in Microsoft",
+  "login.help": "Microsoft login opens in your browser. If the account does not own Minecraft Java, Dreame Launcher will tell you.",
+  "login.loginFirst": "Login first",
+  "login.microsoftAccount": "Microsoft Minecraft account",
+  "login.offlineAccount": "Offline account - no premium server access",
+  "login.noSavedAccounts": "No saved accounts yet.",
+  "login.signOut": "Sign out",
+  "login.copiedCode": "Copied code {code}. Paste it into Microsoft.",
+  "player.title": "Player",
+  "player.minecraftName": "Minecraft name",
+  "updates.title": "Updates",
+  "updates.launcherVersion": "Launcher version",
+  "updates.help": "Check GitHub Releases for a new launcher build.",
+  "updates.downloading": "Downloading update...",
+  "updates.downloadingShort": "Downloading...",
+  "updates.check": "Check Update",
+  "updates.checkAgain": "Check Again",
+  "updates.install": "Install Update",
+  "updates.installToast": "Install",
+  "updates.checkingGithub": "Checking GitHub Releases...",
+  "updates.upToDate": "Dreame Launcher is up to date.",
+  "updates.readyTitle": "Update v{version} is ready",
+  "updates.readyMessage": "Install it now and Dreame will reopen when it finishes.",
+  "updates.downloaded": "Downloaded {name}. Starting installer...",
+  "updates.available": "Update available: v{version}. Click Install Update to download and install it.",
+  "updates.startingInstaller": "Starting installer...",
+  "updates.downloadFailed": "Could not download the update installer.",
+  "instances.eyebrow": "Profiles and modpacks",
+  "instances.create": "Create Instance",
+  "instances.empty": "Select an instance to configure folders, Java, memory, and files.",
+  "explore.eyebrow": "Modrinth browser",
+  "explore.modpacks": "Modpacks",
+  "explore.mods": "Mods",
+  "explore.resourcepacks": "Resource Packs",
+  "explore.datapacks": "Data Packs",
+  "explore.shaders": "Shaders",
+  "explore.servers": "Servers",
+  "explore.searchPlaceholder": "Search Modrinth...",
+  "explore.help": "Search Modrinth for modpacks, mods, resource packs, data packs, shaders, and servers.",
+  "explore.noServers": "No server results yet.",
+  "explore.noResults": "No Modrinth results yet.",
+  "explore.searchingServers": "Searching servers...",
+  "explore.searchingModrinth": "Searching Modrinth {type}...",
+  "explore.showing": "Showing {start}-{end} of {total} {type} from Modrinth.",
+  "explore.showingServers": "Showing {start}-{end} of {total} servers.",
+  "skin.eyebrow": "Player style",
+  "skin.title": "Skin Selector",
+  "skin.upload": "Upload Skin",
+  "skin.notLoggedIn": "You are not logged in",
+  "skin.loginHelp": "Login or select an account first, then you can upload, preview, and change skins.",
+  "skin.loginMinecraftHelp": "Login or select a Minecraft account first, then you can upload, preview, and change skins.",
+  "skin.notLoggedInStatus": "You are not logged in. Login first to use skins.",
+  "skin.minecraftRequired": "Minecraft account required",
+  "skin.offlineHelp": "The selected account is offline. Login with a Microsoft Minecraft Java account to change and load skins.",
+  "skin.offlineStatus": "You need a Minecraft Java account to use skins. The selected account is offline.",
+  "skin.noSelection": "No skin selected",
+  "skin.drag": "Drag to rotate",
+  "skin.status": "Upload a Minecraft skin PNG, select it, then click Change.",
+  "skin.saved": "Saved skins",
+  "skin.add": "Add skin",
+  "skin.pngOnly": "PNG only",
+  "settings.eyebrow": "Launcher preferences",
+  "settings.appearance": "Appearance",
+  "settings.language": "Language",
+  "settings.theme": "Theme",
+  "settings.colorTheme": "Color",
+  "settings.grayTheme": "Black / Gray",
+  "settings.uiColor": "UI Color",
+  "settings.custom": "Custom",
+  "settings.languageHelp": "Choose the launcher language. Search by language name or region.",
+  "settings.searchLanguages": "Search languages...",
+  "settings.noMatchingLanguages": "No matching languages."
+};
+const i18n = {
+  en: englishTranslations,
+  fr: {
+    ...englishTranslations,
+    "nav.home": "Accueil", "nav.explore": "Explorer", "nav.instances": "Instances", "nav.skin": "Skin", "nav.settings": "Paramètres",
+    "profile.ready": "Prêt à jouer", "home.eyebrow": "Lanceur Minecraft desktop", "home.welcome": "Bon retour !", "home.jumpBack": "Reprendre", "home.browseServers": "Parcourir les serveurs",
+    "common.folder": "Dossier", "common.refresh": "Actualiser", "common.search": "Rechercher", "common.change": "Changer", "common.remove": "Supprimer", "common.clickToCopy": "Cliquer pour copier", "common.copied": "Copié", "common.checking": "Vérification...", "common.loading": "Chargement...", "common.savingTo": "Enregistrement dans",
+    "login.title": "Connexion", "login.noAccount": "Aucun compte sélectionné", "login.addAccount": "Ajouter Microsoft ou local hors ligne", "login.microsoft": "Connexion Microsoft", "login.offline": "Compte hors ligne", "login.enterCode": "Entre ce code dans Microsoft", "login.help": "La connexion Microsoft s’ouvre dans ton navigateur. Si le compte ne possède pas Minecraft Java, Dreame Launcher te le dira.", "login.loginFirst": "Connecte-toi d’abord",
+    "player.title": "Joueur", "player.minecraftName": "Nom Minecraft", "updates.title": "Mises à jour", "updates.launcherVersion": "Version du lanceur", "updates.help": "Vérifie GitHub Releases pour une nouvelle version.", "updates.downloading": "Téléchargement de la mise à jour...", "updates.check": "Vérifier", "updates.install": "Installer",
+    "instances.eyebrow": "Profils et modpacks", "instances.create": "Créer une instance", "instances.empty": "Sélectionne une instance pour configurer dossiers, Java, mémoire et fichiers.",
+    "explore.eyebrow": "Navigateur Modrinth", "explore.modpacks": "Modpacks", "explore.mods": "Mods", "explore.resourcepacks": "Packs de ressources", "explore.datapacks": "Data packs", "explore.shaders": "Shaders", "explore.servers": "Serveurs", "explore.searchPlaceholder": "Rechercher sur Modrinth...", "explore.help": "Recherche des modpacks, mods, packs, data packs, shaders et serveurs.",
+    "skin.eyebrow": "Style du joueur", "skin.title": "Sélecteur de skin", "skin.upload": "Importer un skin", "skin.notLoggedIn": "Tu n’es pas connecté", "skin.loginHelp": "Connecte-toi ou choisis un compte pour importer, prévisualiser et changer les skins.", "skin.noSelection": "Aucun skin sélectionné", "skin.drag": "Glisser pour tourner", "skin.status": "Importe un PNG Minecraft, sélectionne-le, puis clique sur Changer.", "skin.saved": "Skins sauvegardés", "skin.add": "Ajouter un skin", "skin.pngOnly": "PNG uniquement",
+    "settings.eyebrow": "Préférences du lanceur", "settings.appearance": "Apparence", "settings.language": "Langue", "settings.theme": "Thème", "settings.colorTheme": "Couleur", "settings.grayTheme": "Noir / Gris", "settings.uiColor": "Couleur de l’UI", "settings.custom": "Personnalisé", "settings.languageHelp": "Choisis la langue du lanceur. Recherche par nom ou région.", "settings.searchLanguages": "Rechercher une langue..."
+  },
+  es: {
+    ...englishTranslations,
+    "nav.home": "Inicio", "nav.explore": "Explorar", "nav.instances": "Instancias", "nav.skin": "Skin", "nav.settings": "Ajustes",
+    "profile.ready": "Listo para jugar", "home.eyebrow": "Lanzador de Minecraft", "home.welcome": "¡Bienvenido de nuevo!", "home.jumpBack": "Volver a jugar", "home.browseServers": "Ver servidores",
+    "common.folder": "Carpeta", "common.refresh": "Actualizar", "common.search": "Buscar", "common.change": "Cambiar", "common.remove": "Eliminar", "common.clickToCopy": "Clic para copiar", "common.copied": "Copiado", "common.checking": "Comprobando...", "common.loading": "Cargando...", "common.savingTo": "Guardando en",
+    "login.title": "Iniciar sesión", "login.noAccount": "No hay cuenta seleccionada", "login.addAccount": "Añade Microsoft o una cuenta local offline", "login.microsoft": "Login Microsoft", "login.offline": "Cuenta offline", "login.enterCode": "Introduce este código en Microsoft", "login.help": "El login de Microsoft se abre en tu navegador. Si la cuenta no tiene Minecraft Java, Dreame Launcher te avisará.", "login.loginFirst": "Inicia sesión primero",
+    "player.title": "Jugador", "player.minecraftName": "Nombre de Minecraft", "updates.title": "Actualizaciones", "updates.launcherVersion": "Versión del launcher", "updates.help": "Busca una nueva versión en GitHub Releases.", "updates.downloading": "Descargando actualización...", "updates.check": "Comprobar", "updates.install": "Instalar",
+    "instances.eyebrow": "Perfiles y modpacks", "instances.create": "Crear instancia", "instances.empty": "Selecciona una instancia para configurar carpetas, Java, memoria y archivos.",
+    "explore.eyebrow": "Navegador Modrinth", "explore.resourcepacks": "Packs de recursos", "explore.datapacks": "Data packs", "explore.shaders": "Shaders", "explore.servers": "Servidores", "explore.searchPlaceholder": "Buscar en Modrinth...", "explore.help": "Busca modpacks, mods, packs de recursos, data packs, shaders y servidores.",
+    "skin.eyebrow": "Estilo del jugador", "skin.title": "Selector de skin", "skin.upload": "Subir skin", "skin.notLoggedIn": "No has iniciado sesión", "skin.loginHelp": "Inicia sesión o selecciona una cuenta para subir, ver y cambiar skins.", "skin.noSelection": "Ningún skin seleccionado", "skin.drag": "Arrastra para rotar", "skin.status": "Sube un PNG de skin, selecciónalo y pulsa Cambiar.", "skin.saved": "Skins guardados", "skin.add": "Añadir skin", "skin.pngOnly": "Solo PNG",
+    "settings.eyebrow": "Preferencias del launcher", "settings.appearance": "Apariencia", "settings.language": "Idioma", "settings.theme": "Tema", "settings.colorTheme": "Color", "settings.grayTheme": "Negro / Gris", "settings.uiColor": "Color de UI", "settings.custom": "Personalizado", "settings.languageHelp": "Elige el idioma del launcher. Busca por nombre o región.", "settings.searchLanguages": "Buscar idiomas..."
+  },
+  ar: {
+    ...englishTranslations,
+    "nav.home": "الرئيسية", "nav.explore": "استكشاف", "nav.instances": "العوالم", "nav.skin": "السكن", "nav.settings": "الإعدادات",
+    "profile.ready": "جاهز للعب", "home.eyebrow": "مشغل ماينكرافت", "home.welcome": "مرحباً بعودتك!", "home.jumpBack": "ارجع للعب", "home.browseServers": "تصفح السيرفرات",
+    "common.folder": "المجلد", "common.refresh": "تحديث", "common.search": "بحث", "common.change": "تغيير", "common.remove": "حذف", "common.clickToCopy": "اضغط للنسخ", "common.copied": "تم النسخ", "common.checking": "جار الفحص...", "common.loading": "جار التحميل...", "common.savingTo": "يتم الحفظ في",
+    "login.title": "تسجيل الدخول", "login.noAccount": "لا يوجد حساب محدد", "login.addAccount": "أضف حساب Microsoft أو حساب offline", "login.microsoft": "دخول Microsoft", "login.offline": "حساب Offline", "login.enterCode": "أدخل هذا الكود في Microsoft", "login.help": "سيفتح تسجيل Microsoft في المتصفح. إذا لم يكن الحساب يملك Minecraft Java سيخبرك Dreame Launcher.", "login.loginFirst": "سجل الدخول أولاً",
+    "player.title": "اللاعب", "player.minecraftName": "اسم ماينكرافت", "updates.title": "التحديثات", "updates.launcherVersion": "إصدار المشغل", "updates.help": "افحص GitHub Releases للحصول على إصدار جديد.", "updates.downloading": "جار تنزيل التحديث...", "updates.check": "فحص التحديث", "updates.install": "تثبيت التحديث",
+    "instances.eyebrow": "البروفايلات والمودباكات", "instances.create": "إنشاء نسخة", "instances.empty": "اختر نسخة لإعداد المجلدات و Java والذاكرة والملفات.",
+    "explore.eyebrow": "متصفح Modrinth", "explore.modpacks": "مودباكات", "explore.mods": "مودات", "explore.resourcepacks": "حزم الموارد", "explore.datapacks": "داتا باكس", "explore.shaders": "شيدرز", "explore.servers": "سيرفرات", "explore.searchPlaceholder": "ابحث في Modrinth...", "explore.help": "ابحث عن مودباكات ومودات وحزم موارد وداتا باكس وشيدرز وسيرفرات.",
+    "skin.eyebrow": "ستايل اللاعب", "skin.title": "اختيار السكن", "skin.upload": "رفع سكن", "skin.notLoggedIn": "أنت غير مسجل", "skin.loginHelp": "سجل الدخول أو اختر حساباً أولاً لتستطيع رفع ومعاينة وتغيير السكنات.", "skin.noSelection": "لم يتم اختيار سكن", "skin.drag": "اسحب للتدوير", "skin.status": "ارفع ملف PNG لسكن ماينكرافت، اختره، ثم اضغط تغيير.", "skin.saved": "السكنات المحفوظة", "skin.add": "إضافة سكن", "skin.pngOnly": "PNG فقط",
+    "settings.eyebrow": "تفضيلات المشغل", "settings.appearance": "المظهر", "settings.language": "اللغة", "settings.theme": "الثيم", "settings.colorTheme": "ألوان", "settings.grayTheme": "أسود / رمادي", "settings.uiColor": "لون الواجهة", "settings.custom": "مخصص", "settings.languageHelp": "اختر لغة المشغل. ابحث باسم اللغة أو المنطقة.", "settings.searchLanguages": "ابحث عن لغة..."
+  },
+  de: {
+    ...englishTranslations,
+    "nav.home": "Start", "nav.explore": "Entdecken", "nav.instances": "Instanzen", "nav.skin": "Skin", "nav.settings": "Einstellungen",
+    "profile.ready": "Bereit zum Spielen", "home.welcome": "Willkommen zurück!", "home.jumpBack": "Weiterspielen", "home.browseServers": "Server durchsuchen",
+    "common.folder": "Ordner", "common.refresh": "Aktualisieren", "common.search": "Suchen", "common.change": "Ändern", "common.remove": "Entfernen",
+    "login.title": "Anmelden", "login.noAccount": "Kein Konto ausgewählt", "login.microsoft": "Microsoft-Anmeldung", "login.offline": "Offline-Konto",
+    "updates.title": "Updates", "updates.check": "Update prüfen", "updates.install": "Update installieren",
+    "settings.appearance": "Darstellung", "settings.language": "Sprache", "settings.theme": "Design", "settings.uiColor": "UI-Farbe", "settings.searchLanguages": "Sprachen suchen..."
+  },
+  pt: {
+    ...englishTranslations,
+    "nav.home": "Início", "nav.explore": "Explorar", "nav.instances": "Instâncias", "nav.settings": "Configurações",
+    "home.welcome": "Bem-vindo de volta!", "home.jumpBack": "Voltar a jogar", "home.browseServers": "Ver servidores",
+    "common.folder": "Pasta", "common.refresh": "Atualizar", "common.search": "Pesquisar", "common.change": "Alterar", "common.remove": "Remover",
+    "login.title": "Entrar", "login.noAccount": "Nenhuma conta selecionada", "updates.title": "Atualizações",
+    "settings.appearance": "Aparência", "settings.language": "Idioma", "settings.theme": "Tema", "settings.uiColor": "Cor da UI", "settings.searchLanguages": "Pesquisar idiomas..."
+  },
+  ru: {
+    ...englishTranslations,
+    "nav.home": "Главная", "nav.explore": "Обзор", "nav.instances": "Сборки", "nav.skin": "Скин", "nav.settings": "Настройки",
+    "home.welcome": "С возвращением!", "home.jumpBack": "Продолжить", "home.browseServers": "Серверы",
+    "common.folder": "Папка", "common.refresh": "Обновить", "common.search": "Поиск", "common.change": "Изменить", "common.remove": "Удалить",
+    "login.title": "Вход", "login.noAccount": "Аккаунт не выбран", "updates.title": "Обновления",
+    "settings.appearance": "Внешний вид", "settings.language": "Язык", "settings.theme": "Тема", "settings.uiColor": "Цвет интерфейса", "settings.searchLanguages": "Поиск языков..."
+  },
+  zh: {
+    ...englishTranslations,
+    "nav.home": "主页", "nav.explore": "探索", "nav.instances": "实例", "nav.skin": "皮肤", "nav.settings": "设置",
+    "home.welcome": "欢迎回来！", "home.jumpBack": "继续游玩", "home.browseServers": "浏览服务器",
+    "common.folder": "文件夹", "common.refresh": "刷新", "common.search": "搜索", "common.change": "更改", "common.remove": "删除",
+    "login.title": "登录", "login.noAccount": "未选择账号", "updates.title": "更新",
+    "settings.appearance": "外观", "settings.language": "语言", "settings.theme": "主题", "settings.uiColor": "界面颜色", "settings.searchLanguages": "搜索语言..."
+  },
+  ja: {
+    ...englishTranslations,
+    "nav.home": "ホーム", "nav.explore": "探索", "nav.instances": "インスタンス", "nav.skin": "スキン", "nav.settings": "設定",
+    "home.welcome": "おかえりなさい！", "home.jumpBack": "再開", "home.browseServers": "サーバーを見る",
+    "common.folder": "フォルダー", "common.refresh": "更新", "common.search": "検索", "common.change": "変更", "common.remove": "削除",
+    "login.title": "ログイン", "login.noAccount": "アカウント未選択", "updates.title": "アップデート",
+    "settings.appearance": "外観", "settings.language": "言語", "settings.theme": "テーマ", "settings.uiColor": "UIカラー", "settings.searchLanguages": "言語を検索..."
+  },
+  ko: {
+    ...englishTranslations,
+    "nav.home": "홈", "nav.explore": "탐색", "nav.instances": "인스턴스", "nav.skin": "스킨", "nav.settings": "설정",
+    "home.welcome": "다시 오신 걸 환영합니다!", "home.jumpBack": "계속하기", "home.browseServers": "서버 보기",
+    "common.folder": "폴더", "common.refresh": "새로고침", "common.search": "검색", "common.change": "변경", "common.remove": "삭제",
+    "login.title": "로그인", "login.noAccount": "선택된 계정 없음", "updates.title": "업데이트",
+    "settings.appearance": "외형", "settings.language": "언어", "settings.theme": "테마", "settings.uiColor": "UI 색상", "settings.searchLanguages": "언어 검색..."
+  }
+};
 let saveTimer;
 let selectedTheme = "color";
+let selectedLanguage = "en";
 let accounts = [];
 let activeAccountId = null;
 let instances = [];
@@ -338,11 +575,135 @@ function applyTheme(theme) {
   });
 }
 
+function getSelectedLanguage() {
+  return languages.find((language) => language.code === selectedLanguage) || languages[0];
+}
+
+function tr(key) {
+  return i18n[selectedLanguage]?.[key] || englishTranslations[key] || key;
+}
+
+function trf(key, values = {}) {
+  return tr(key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? "");
+}
+
+function translateStaticUi() {
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = tr(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+    node.placeholder = tr(node.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+    node.title = tr(node.dataset.i18nTitle);
+  });
+}
+
+function refreshTranslatedDynamicUi() {
+  const account = accounts.find((item) => item.id === activeAccountId);
+  if (account) {
+    accountName.textContent = account.name;
+    accountType.textContent = isMinecraftAccount(account)
+      ? tr("login.microsoftAccount")
+      : tr("login.offlineAccount");
+    profileName.textContent = account.name;
+    minecraftName.textContent = account.name;
+  } else {
+    accountName.textContent = tr("login.noAccount");
+    accountType.textContent = tr("login.addAccount");
+    profileName.textContent = tr("login.loginFirst");
+    minecraftName.textContent = tr("login.loginFirst");
+  }
+
+  if (!deviceCodeBox?.classList.contains("copied")) {
+    deviceCodeCopyHint.textContent = tr("common.clickToCopy");
+  }
+
+  if (deviceCode?.textContent.trim() === "----") authStatus.textContent = tr("login.help");
+  if (updateStatus && !pendingLauncherUpdate) updateStatus.textContent = tr("updates.help");
+  if (updateProgress?.hidden) updateProgressLabel.textContent = tr("updates.downloading");
+  if (installUpdateButton?.hidden) installUpdateButton.textContent = tr("updates.install");
+  if (checkUpdateButton && !checkUpdateButton.disabled && !pendingLauncherUpdate) {
+    checkUpdateButton.textContent = tr("updates.check");
+  }
+  if (updateToastInstall && !updateToastInstall.disabled) updateToastInstall.textContent = tr("updates.installToast");
+
+  renderAccounts();
+  updateSkinAccess();
+  renderExploreResults();
+  if (!exploreItems.length) exploreStatus.textContent = tr("explore.help");
+}
+
+function applyLanguage(languageCode) {
+  selectedLanguage = languages.some((language) => language.code === languageCode) ? languageCode : "en";
+  const language = getSelectedLanguage();
+  document.documentElement.lang = selectedLanguage;
+  document.documentElement.dir = selectedLanguage === "ar" ? "rtl" : "ltr";
+  document.body.dataset.language = selectedLanguage;
+  if (selectedLanguageLabel) {
+    selectedLanguageLabel.textContent = language.native ? `${language.name} / ${language.native}` : language.name;
+  }
+  translateStaticUi();
+  renderLanguageList();
+  refreshTranslatedDynamicUi();
+}
+
+function renderLanguageList() {
+  if (!languageList) return;
+  const query = (languageSearch?.value || "").trim().toLowerCase();
+  languageList.innerHTML = "";
+  const matches = languages.filter((language) => (
+    [language.name, language.native, language.region, language.code]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(query)
+  ));
+
+  if (!matches.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-accounts";
+    empty.textContent = tr("settings.noMatchingLanguages");
+    languageList.append(empty);
+    return;
+  }
+
+  for (const language of matches) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "language-option";
+    button.classList.toggle("selected", language.code === selectedLanguage);
+    button.innerHTML = `
+      <span class="language-code">${language.code.toUpperCase()}</span>
+      <span class="language-copy">
+        <strong>${language.name}</strong>
+        <small>${[language.native, language.region].filter(Boolean).join(" - ")}</small>
+      </span>
+    `;
+    button.addEventListener("click", () => {
+      applyLanguage(language.code);
+      queueSave();
+    });
+    languageList.append(button);
+  }
+}
+
+function showSettingsTab(tab) {
+  const activeTab = tab === "language" ? "language" : "appearance";
+  settingsTabs?.querySelectorAll("button").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.settingsTab === activeTab);
+  });
+  if (appearanceSettings) appearanceSettings.hidden = activeTab !== "appearance";
+  if (languageSettings) languageSettings.hidden = activeTab !== "language";
+}
+
 function collectSettings() {
+  const activeAccount = accounts.find((account) => account.id === activeAccountId);
   return {
     accent: accentInput.value,
     theme: selectedTheme,
-    playerName: accountName.textContent === "No account selected" ? "Login first" : accountName.textContent
+    language: selectedLanguage,
+    playerName: activeAccount?.name || tr("login.loginFirst")
   };
 }
 
@@ -357,7 +718,7 @@ function queueSave() {
 function setUpdateProgress(percent, message) {
   const value = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
   updateProgress.hidden = false;
-  updateProgressLabel.textContent = message || "Downloading update...";
+  updateProgressLabel.textContent = message || tr("updates.downloading");
   updateProgressPercent.textContent = `${value}%`;
   updateProgressFill.style.width = `${value}%`;
 }
@@ -366,13 +727,13 @@ function resetUpdateProgress() {
   updateProgress.hidden = true;
   updateProgressFill.style.width = "0%";
   updateProgressPercent.textContent = "0%";
-  updateProgressLabel.textContent = "Downloading update...";
+  updateProgressLabel.textContent = tr("updates.downloading");
 }
 
 function showUpdateToast(update) {
   if (!updateToast || !update?.available) return;
-  updateToastTitle.textContent = `Update v${update.latestVersion} is ready`;
-  updateToastMessage.textContent = "Install it now and Dreame will reopen when it finishes.";
+  updateToastTitle.textContent = trf("updates.readyTitle", { version: update.latestVersion });
+  updateToastMessage.textContent = tr("updates.readyMessage");
   updateToast.hidden = false;
   requestAnimationFrame(() => updateToast.classList.add("visible"));
 }
@@ -392,20 +753,20 @@ async function checkLauncherUpdate({ download = false } = {}) {
     pendingLauncherUpdate = null;
     installUpdateButton.hidden = true;
     installUpdateButton.disabled = false;
-    installUpdateButton.textContent = "Install Update";
+    installUpdateButton.textContent = tr("updates.install");
   }
   checkUpdateButton.disabled = true;
-  checkUpdateButton.textContent = download ? "Downloading..." : "Checking...";
-  updateStatus.textContent = download ? "Downloading update..." : "Checking GitHub Releases...";
+  checkUpdateButton.textContent = download ? tr("updates.downloadingShort") : tr("common.checking");
+  updateStatus.textContent = download ? tr("updates.downloading") : tr("updates.checkingGithub");
   if (!download) resetUpdateProgress();
 
   try {
     const result = download ? await window.dreame.downloadUpdate() : await window.dreame.checkUpdate();
-    launcherVersion.textContent = result.currentVersion ? `v${result.currentVersion}` : "Unknown";
+    launcherVersion.textContent = result.currentVersion ? `v${result.currentVersion}` : tr("common.unknown");
     if (!result.available) {
       updatePanel?.classList.remove("is-update-ready");
       hideUpdateToast();
-      updateStatus.textContent = result.message || "Dreame Launcher is up to date.";
+      updateStatus.textContent = result.message || tr("updates.upToDate");
       return result;
     }
 
@@ -414,28 +775,28 @@ async function checkLauncherUpdate({ download = false } = {}) {
       pendingLauncherUpdate = result;
       updatePanel?.classList.add("is-update-ready");
       showUpdateToast(result);
-      updateStatus.textContent = `Downloaded ${result.releaseName || `v${result.latestVersion}`}. Starting installer...`;
+      updateStatus.textContent = trf("updates.downloaded", { name: result.releaseName || `v${result.latestVersion}` });
       installUpdateButton.hidden = false;
-      checkUpdateButton.textContent = "Check Update";
+      checkUpdateButton.textContent = tr("updates.check");
       return result;
     }
 
     pendingLauncherUpdate = result;
     updatePanel?.classList.add("is-update-ready");
     showUpdateToast(result);
-    updateStatus.textContent = `Update available: v${result.latestVersion}. Click Install Update to download and install it.`;
+    updateStatus.textContent = trf("updates.available", { version: result.latestVersion });
     installUpdateButton.hidden = false;
     installUpdateButton.disabled = false;
-    installUpdateButton.textContent = "Install Update";
-    checkUpdateButton.textContent = "Check Again";
+    installUpdateButton.textContent = tr("updates.install");
+    checkUpdateButton.textContent = tr("updates.checkAgain");
     return result;
   } catch (error) {
     updateStatus.textContent = error.message;
     return null;
   } finally {
     checkUpdateButton.disabled = false;
-    if (!download && checkUpdateButton.textContent === "Checking...") checkUpdateButton.textContent = "Check Update";
-    if (download && checkUpdateButton.textContent === "Downloading...") checkUpdateButton.textContent = "Check Update";
+    if (!download && checkUpdateButton.textContent === tr("common.checking")) checkUpdateButton.textContent = tr("updates.check");
+    if (download && checkUpdateButton.textContent === tr("updates.downloadingShort")) checkUpdateButton.textContent = tr("updates.check");
   }
 }
 
@@ -444,25 +805,25 @@ async function installLatestLauncherUpdate() {
   installUpdateButton.disabled = true;
   checkUpdateButton.disabled = true;
   updateToastInstall.disabled = true;
-  installUpdateButton.textContent = "Installing...";
-  updateToastInstall.textContent = "Installing...";
+  installUpdateButton.textContent = tr("common.installing");
+  updateToastInstall.textContent = tr("common.installing");
   try {
     let installerPath = downloadedUpdateInstaller;
     if (!installerPath) {
       const result = await checkLauncherUpdate({ download: true });
       if (!result?.downloaded || !result.installerPath) {
-        throw new Error("Could not download the update installer.");
+        throw new Error(tr("updates.downloadFailed"));
       }
       installerPath = result.installerPath;
     }
-    updateStatus.textContent = "Starting installer...";
+    updateStatus.textContent = tr("updates.startingInstaller");
     await window.dreame.installUpdate(installerPath);
   } catch (error) {
     installUpdateButton.disabled = false;
     checkUpdateButton.disabled = false;
     updateToastInstall.disabled = false;
-    installUpdateButton.textContent = "Install Update";
-    updateToastInstall.textContent = "Install";
+    installUpdateButton.textContent = tr("updates.install");
+    updateToastInstall.textContent = tr("updates.installToast");
     updateStatus.textContent = error.message;
     updateToastMessage.textContent = error.message;
   }
@@ -477,11 +838,11 @@ function setActiveAccount(account) {
     activeAccountId = null;
     activeSkinId = null;
     selectedSkinId = null;
-    accountName.textContent = "No account selected";
-    accountType.textContent = "Add Microsoft or local offline";
+    accountName.textContent = tr("login.noAccount");
+    accountType.textContent = tr("login.addAccount");
     accountAvatar.textContent = "DP";
-    profileName.textContent = "Login first";
-    minecraftName.textContent = "Login first";
+    profileName.textContent = tr("login.loginFirst");
+    minecraftName.textContent = tr("login.loginFirst");
     renderAccounts();
     updateSkinAccess();
     return;
@@ -492,8 +853,8 @@ function setActiveAccount(account) {
   selectedSkinId = activeSkinId;
   accountName.textContent = account.name;
   accountType.textContent = isMinecraftAccount(account)
-    ? "Microsoft Minecraft account"
-    : "Offline account - no premium server access";
+    ? tr("login.microsoftAccount")
+    : tr("login.offlineAccount");
   accountAvatar.textContent = account.name.slice(0, 2).toUpperCase();
   profileName.textContent = account.name;
   minecraftName.textContent = account.name;
@@ -508,7 +869,7 @@ function renderAccounts() {
   if (accounts.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-accounts";
-    empty.textContent = "No saved accounts yet.";
+    empty.textContent = tr("login.noSavedAccounts");
     accountList.append(empty);
     return;
   }
@@ -533,11 +894,11 @@ function renderAccounts() {
     name.textContent = account.name;
 
     const type = document.createElement("small");
-    type.textContent = account.type === "offline" ? "Offline" : "Microsoft";
+    type.textContent = account.type === "offline" ? tr("login.offline") : "Microsoft";
 
     const remove = document.createElement("span");
     remove.className = "remove-account";
-    remove.textContent = "Sign out";
+    remove.textContent = tr("login.signOut");
     remove.addEventListener("click", async (event) => {
       event.stopPropagation();
       const result = await window.dreame.removeAccount(account.id);
@@ -585,12 +946,12 @@ function renderRecentServersLegacy() {
 
     const play = document.createElement("button");
     play.className = "play-button recent-server-play";
-    play.innerHTML = '<span class="play-icon"></span><span>Play</span>';
+    play.innerHTML = `<span class="play-icon"></span><span>${tr("common.play")}</span>`;
     play.addEventListener("click", async () => {
       try {
         play.disabled = true;
-        play.innerHTML = '<span class="server-launch-spinner"></span><span>Launching</span>';
-        authStatus.textContent = `Launching ${instance.name} and joining ${server.address}...`;
+        play.innerHTML = `<span class="server-launch-spinner"></span><span>${tr("common.launching")}</span>`;
+        authStatus.textContent = trf("home.launchingServer", { instance: instance.name, server: server.address });
         const result = await window.dreame.launchModrinthServer({
           instanceId: server.instanceId,
           address: server.address,
@@ -599,11 +960,11 @@ function renderRecentServersLegacy() {
         });
         recentServers = result.recentServers || recentServers;
         renderRecentServers();
-        authStatus.textContent = `Minecraft launched with ${instance.name}. Joining ${server.address}.`;
+        authStatus.textContent = trf("home.launchedServer", { instance: instance.name, server: server.address });
       } catch (error) {
         authStatus.textContent = error.message;
         play.disabled = false;
-        play.innerHTML = '<span class="play-icon"></span><span>Play</span>';
+        play.innerHTML = `<span class="play-icon"></span><span>${tr("common.play")}</span>`;
       }
     });
 
@@ -619,7 +980,11 @@ function renderRecentServers() {
   if (available.length === 0) {
     const empty = document.createElement("div");
     empty.className = "recent-servers-empty";
-    empty.innerHTML = "<strong>No joined servers yet</strong><span>Join a server in Minecraft or launch one from Explore, then it appears here.</span>";
+    const title = document.createElement("strong");
+    title.textContent = tr("home.noJoinedServers");
+    const help = document.createElement("span");
+    help.textContent = tr("home.joinServerHelp");
+    empty.append(title, help);
     recentServersList.append(empty);
     return;
   }
@@ -659,12 +1024,12 @@ function renderRecentServers() {
 
     const play = document.createElement("button");
     play.className = "play-button recent-server-play";
-    play.innerHTML = '<span class="play-icon"></span><span>Play</span>';
+    play.innerHTML = `<span class="play-icon"></span><span>${tr("common.play")}</span>`;
     play.addEventListener("click", async () => {
       try {
         play.disabled = true;
-        play.innerHTML = '<span class="server-launch-spinner"></span><span>Launching</span>';
-        authStatus.textContent = `Launching ${instance.name} and joining ${server.address}...`;
+        play.innerHTML = `<span class="server-launch-spinner"></span><span>${tr("common.launching")}</span>`;
+        authStatus.textContent = trf("home.launchingServer", { instance: instance.name, server: server.address });
         const result = await window.dreame.launchModrinthServer({
           instanceId: server.instanceId,
           address: server.address,
@@ -674,21 +1039,21 @@ function renderRecentServers() {
         });
         recentServers = result.recentServers || recentServers;
         renderRecentServers();
-        authStatus.textContent = `Minecraft launched with ${instance.name}. Joining ${server.address}.`;
+        authStatus.textContent = trf("home.launchedServer", { instance: instance.name, server: server.address });
       } catch (error) {
         authStatus.textContent = error.message;
         play.disabled = false;
-        play.innerHTML = '<span class="play-icon"></span><span>Play</span>';
+        play.innerHTML = `<span class="play-icon"></span><span>${tr("common.play")}</span>`;
       }
     });
 
     const menu = document.createElement("button");
     menu.className = "recent-server-menu";
-    menu.title = "Copy server address";
+    menu.title = tr("home.copyServerAddress");
     menu.textContent = "⋮";
     menu.addEventListener("click", async () => {
       await window.dreame.copyText(server.address);
-      authStatus.textContent = `Copied ${server.address}.`;
+      authStatus.textContent = trf("home.copiedServer", { server: server.address });
     });
 
     card.append(icon, details, play, menu);
@@ -1032,9 +1397,9 @@ function updateSkinAccess() {
 
   if (!loggedIn) {
     skinLoginGate.hidden = false;
-    skinGateTitle.textContent = "You are not logged in";
-    skinGateMessage.textContent = "Login or select a Minecraft account first, then you can upload, preview, and change skins.";
-    skinStatus.textContent = "You are not logged in. Login first to use skins.";
+    skinGateTitle.textContent = tr("skin.notLoggedIn");
+    skinGateMessage.textContent = tr("skin.loginMinecraftHelp");
+    skinStatus.textContent = tr("skin.notLoggedInStatus");
     activeSkinId = null;
     selectedSkinId = null;
     renderSkins();
@@ -1043,9 +1408,9 @@ function updateSkinAccess() {
 
   if (!minecraftAccount) {
     skinLoginGate.hidden = false;
-    skinGateTitle.textContent = "Minecraft account required";
-    skinGateMessage.textContent = "The selected account is offline. Login with a Microsoft Minecraft Java account to change and load skins.";
-    skinStatus.textContent = "You need a Minecraft Java account to use skins. The selected account is offline.";
+    skinGateTitle.textContent = tr("skin.minecraftRequired");
+    skinGateMessage.textContent = tr("skin.offlineHelp");
+    skinStatus.textContent = tr("skin.offlineStatus");
     activeSkinId = null;
     selectedSkinId = null;
     renderSkins();
@@ -1055,13 +1420,13 @@ function updateSkinAccess() {
   skinLoginGate.hidden = true;
   activeSkinId = activeSkinByAccount[activeAccountId] || null;
   selectedSkinId = activeSkinId;
-  skinStatus.textContent = "Upload a Minecraft skin PNG, select it, then click Change.";
+  skinStatus.textContent = tr("skin.status");
   renderSkins();
 }
 
 function setSkinPreview(skin) {
   if (!skin) {
-    skinPreviewName.textContent = "No skin selected";
+    skinPreviewName.textContent = tr("skin.noSelection");
     skinModel.style.removeProperty("--skin-texture");
     skinModel.hidden = true;
     skinViewerCanvas.hidden = true;
@@ -1223,13 +1588,13 @@ async function refreshProfileSkinForAccount(account) {
 
 function exploreTypeLabel(type) {
   return {
-    modpacks: "Modpacks",
-    mods: "Mods",
-    resourcepacks: "Resource Packs",
-    datapacks: "Data Packs",
-    shaders: "Shaders",
-    servers: "Servers"
-  }[type] || "Explore";
+    modpacks: tr("explore.modpacks"),
+    mods: tr("explore.mods"),
+    resourcepacks: tr("explore.resourcepacks"),
+    datapacks: tr("explore.datapacks"),
+    shaders: tr("explore.shaders"),
+    servers: tr("explore.servers")
+  }[type] || tr("nav.explore");
 }
 
 function modrinthProjectType(type) {
@@ -1266,9 +1631,10 @@ function formatRelativeTime(value) {
 function renderExploreResults() {
   exploreResults.innerHTML = "";
   if (exploreItems.length === 0) {
-    exploreResults.innerHTML = activeExploreType === "servers"
-      ? "<p class='empty-accounts'>No server results yet.</p>"
-      : "<p class='empty-accounts'>No Modrinth results yet.</p>";
+    const empty = document.createElement("p");
+    empty.className = "empty-accounts";
+    empty.textContent = activeExploreType === "servers" ? tr("explore.noServers") : tr("explore.noResults");
+    exploreResults.append(empty);
     return;
   }
 
@@ -1305,7 +1671,7 @@ function renderExploreResults() {
 
     const action = document.createElement("button");
     action.className = "mini-button";
-    action.textContent = activeExploreType === "servers" ? "Play" : "Install";
+    action.textContent = activeExploreType === "servers" ? tr("common.play") : tr("common.install");
     action.addEventListener("click", () => openModrinthInstallModal(item));
 
     card.append(icon, body, action);
@@ -1446,8 +1812,8 @@ async function searchExplore({ resetPage = false } = {}) {
   try {
     if (resetPage) exploreOffset = 0;
     exploreStatus.textContent = activeExploreType === "servers"
-      ? "Searching servers..."
-      : `Searching Modrinth ${exploreTypeLabel(activeExploreType)}...`;
+      ? tr("explore.searchingServers")
+      : trf("explore.searchingModrinth", { type: exploreTypeLabel(activeExploreType) });
     const result = await window.dreame.searchModrinth({
       type: activeExploreType,
       query: exploreSearch.value.trim(),
@@ -1458,9 +1824,14 @@ async function searchExplore({ resetPage = false } = {}) {
     exploreOffset = result.offset || 0;
     const start = exploreTotalHits === 0 ? 0 : exploreOffset + 1;
     const end = Math.min(exploreOffset + exploreItems.length, exploreTotalHits);
-    exploreStatus.textContent = `Showing ${start}-${end} of ${exploreTotalHits} ${exploreTypeLabel(activeExploreType).toLowerCase()} from Modrinth.`;
+    exploreStatus.textContent = trf("explore.showing", {
+      start,
+      end,
+      total: exploreTotalHits,
+      type: exploreTypeLabel(activeExploreType).toLowerCase()
+    });
     if (activeExploreType === "servers") {
-      exploreStatus.textContent = `Showing ${start}-${end} of ${exploreTotalHits} servers.`;
+      exploreStatus.textContent = trf("explore.showingServers", { start, end, total: exploreTotalHits });
     }
     renderExploreResults();
     renderExplorePagination();
@@ -2145,21 +2516,21 @@ function setPlayButtonState(button, state) {
   button.dataset.running = state === "running" ? "true" : "false";
 
   if (state === "launching") {
-    button.textContent = "Launching...";
+    button.textContent = tr("common.launching");
     return;
   }
 
   if (state === "stopping") {
-    button.textContent = "Stopping...";
+    button.textContent = tr("common.stopping");
     return;
   }
 
   if (state === "running") {
-    button.innerHTML = '<span class="stop-icon"></span>Stop';
+    button.innerHTML = `<span class="stop-icon"></span>${tr("common.stop")}`;
     return;
   }
 
-  button.innerHTML = '<span class="play-icon"></span>Play';
+  button.innerHTML = `<span class="play-icon"></span>${tr("common.play")}`;
 }
 
 async function refreshLaunchState(instance) {
@@ -2230,6 +2601,7 @@ async function hydrate() {
   launcherVersion.textContent = state.version ? `v${state.version}` : "Unknown";
   applyTheme(settings.theme || "color");
   applyAccent(settings.accent);
+  applyLanguage(settings.language || "en");
   setActiveAccount(accounts.find((account) => account.id === settings.activeAccountId));
 
   await window.dreame.saveSettings(settings);
@@ -2251,6 +2623,14 @@ themeOptions.querySelectorAll("button").forEach((button) => {
     applyTheme(button.dataset.theme);
     queueSave();
   });
+});
+
+settingsTabs?.querySelectorAll("button").forEach((button) => {
+  button.addEventListener("click", () => showSettingsTab(button.dataset.settingsTab));
+});
+
+languageSearch?.addEventListener("input", () => {
+  renderLanguageList();
 });
 
 openDataFolder.addEventListener("click", () => window.dreame.openDataFolder());
@@ -2289,11 +2669,11 @@ deviceCodeBox.addEventListener("click", async () => {
   await window.dreame.copyText(code);
   window.clearTimeout(deviceCodeCopyTimer);
   deviceCodeBox.classList.add("copied");
-  deviceCodeCopyHint.textContent = "Copied";
-  authStatus.textContent = `Copied code ${code}. Paste it into Microsoft.`;
+  deviceCodeCopyHint.textContent = tr("common.copied");
+  authStatus.textContent = trf("login.copiedCode", { code });
   deviceCodeCopyTimer = window.setTimeout(() => {
     deviceCodeBox.classList.remove("copied");
-    deviceCodeCopyHint.textContent = "Click to copy";
+    deviceCodeCopyHint.textContent = tr("common.clickToCopy");
   }, 1800);
 });
 

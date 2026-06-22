@@ -21,17 +21,18 @@
         </div>
 
         <nav class="nav" aria-label="Launcher">
-          <button class="nav-item active" data-view="home">Home</button>
-          <button class="nav-item" data-view="explore">Explore</button>
-          <button class="nav-item" data-view="instances">Instances</button>
-          <button class="nav-item" data-view="skin">Skin</button>
+          <button class="nav-item active" data-view="home" data-i18n="nav.home">Home</button>
+          <button class="nav-item" data-view="explore" data-i18n="nav.explore">Explore</button>
+          <button class="nav-item" data-view="instances" data-i18n="nav.instances">Instances</button>
+          <button class="nav-item" data-view="skin" data-i18n="nav.skin">Skin</button>
+          <button class="nav-item" data-view="settings" data-i18n="nav.settings">Settings</button>
         </nav>
 
         <section class="profile">
           <div class="avatar">DP</div>
           <div>
             <strong id="profileName">DreamePlayer</strong>
-            <span>Ready to play</span>
+            <span data-i18n="profile.ready">Ready to play</span>
           </div>
         </section>
       </aside>
@@ -39,26 +40,26 @@
       <section class="content">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Minecraft desktop launcher</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Minecraft desktop launcher</p>
             <h1>Dreame Launcher</h1>
           </div>
-          <button id="openDataFolder" class="icon-button" title="Open data folder">Folder</button>
+          <button id="openDataFolder" class="icon-button" title="Open data folder" data-i18n="common.folder" data-i18n-title="common.openDataFolder">Folder</button>
         </header>
 
         <section class="recent-servers home-view">
           <div class="recent-servers-head">
             <div>
-              <h2>Welcome back!</h2>
-              <p class="subcopy">Jump back in</p>
+              <h2 data-i18n="home.welcome">Welcome back!</h2>
+              <p class="subcopy" data-i18n="home.jumpBack">Jump back in</p>
             </div>
-            <button id="browseServersButton" class="secondary-button">Browse Servers</button>
+            <button id="browseServersButton" class="secondary-button" data-i18n="home.browseServers">Browse Servers</button>
           </div>
           <div id="recentServersList" class="recent-servers-list"></div>
         </section>
 
         <section class="dashboard home-view">
           <article class="panel auth-panel">
-            <h3>Login</h3>
+            <h3 data-i18n="login.title">Login</h3>
             <div class="account-row">
               <div class="avatar" id="accountAvatar">DP</div>
               <div>
@@ -67,48 +68,31 @@
               </div>
             </div>
             <div class="login-actions">
-              <button id="microsoftLogin" class="mini-button">Microsoft Login</button>
-              <button id="xalLogin" class="mini-button ghost">Sisu/XAL Login</button>
-              <button id="offlineLogin" class="mini-button ghost">Offline Account</button>
+              <button id="microsoftLogin" class="mini-button" data-i18n="login.microsoft">Microsoft Login</button>
+              <button id="xalLogin" class="mini-button ghost" data-i18n="login.xal">Sisu/XAL Login</button>
+              <button id="offlineLogin" class="mini-button ghost" data-i18n="login.offline">Offline Account</button>
             </div>
             <div id="deviceCodeBox" class="device-code-box" hidden>
-              <span>Enter this code in Microsoft</span>
+              <span data-i18n="login.enterCode">Enter this code in Microsoft</span>
               <strong id="deviceCode">----</strong>
-              <span id="deviceCodeCopyHint" class="device-code-copy-hint">Click to copy</span>
+              <span id="deviceCodeCopyHint" class="device-code-copy-hint" data-i18n="common.clickToCopy">Click to copy</span>
             </div>
             <p id="authStatus" class="auth-status">Microsoft login opens in your browser. If the account does not own Minecraft Java, Dreame Launcher will tell you.</p>
           </article>
 
           <article class="panel player-panel">
-            <h3>Player</h3>
+            <h3 data-i18n="player.title">Player</h3>
             <div class="player-display">
-              <span>Minecraft name</span>
+              <span data-i18n="player.minecraftName">Minecraft name</span>
               <strong id="minecraftName">Login first</strong>
             </div>
             <div id="accountList" class="account-list"></div>
           </article>
 
-          <article class="panel accent-panel">
-            <h3>Appearance</h3>
-            <div class="field-group">
-              <span>Theme</span>
-              <div class="segmented theme-options" id="themeOptions">
-                <button type="button" data-theme="color" class="selected">Color</button>
-                <button type="button" data-theme="gray">Black / Gray</button>
-              </div>
-            </div>
-            <h3>UI Color</h3>
-            <div class="swatches" id="swatches"></div>
-            <label>
-              Custom
-              <input id="accent" type="color" />
-            </label>
-          </article>
-
           <article class="panel update-panel">
-            <h3>Updates</h3>
+            <h3 data-i18n="updates.title">Updates</h3>
             <div class="player-display">
-              <span>Launcher version</span>
+              <span data-i18n="updates.launcherVersion">Launcher version</span>
               <strong id="launcherVersion">Checking...</strong>
             </div>
             <p id="updateStatus" class="auth-status">Check GitHub Releases for a new launcher build.</p>
@@ -120,8 +104,8 @@
               <div class="modal-progress-track"><span id="updateProgressFill"></span></div>
             </div>
             <div class="login-actions">
-              <button id="checkUpdateButton" class="mini-button ghost" type="button">Check Update</button>
-              <button id="installUpdateButton" class="mini-button" type="button" hidden>Install Update</button>
+              <button id="checkUpdateButton" class="mini-button ghost" type="button" data-i18n="updates.check">Check Update</button>
+              <button id="installUpdateButton" class="mini-button" type="button" hidden data-i18n="updates.install">Install Update</button>
             </div>
           </article>
         </section>
@@ -129,10 +113,10 @@
         <section id="instancesView" class="instances-view app-view" hidden>
           <div class="section-head">
             <div>
-              <p class="eyebrow">Profiles and modpacks</p>
-              <h2>Instances</h2>
+              <p class="eyebrow" data-i18n="instances.eyebrow">Profiles and modpacks</p>
+              <h2 data-i18n="nav.instances">Instances</h2>
             </div>
-            <button id="createInstance" class="mini-button">Create Instance</button>
+            <button id="createInstance" class="mini-button" data-i18n="instances.create">Create Instance</button>
           </div>
 
           <div class="instances-layout">
@@ -141,7 +125,7 @@
             </div>
 
             <aside id="instanceDetail" class="instance-detail">
-              <p class="empty-accounts">Select an instance to configure folders, Java, memory, and files.</p>
+              <p class="empty-accounts" data-i18n="instances.empty">Select an instance to configure folders, Java, memory, and files.</p>
             </aside>
           </div>
         </section>
@@ -149,24 +133,24 @@
         <section id="exploreView" class="explore-view app-view" hidden>
           <div class="section-head">
             <div>
-              <p class="eyebrow">Modrinth browser</p>
-              <h2>Explore</h2>
+              <p class="eyebrow" data-i18n="explore.eyebrow">Modrinth browser</p>
+              <h2 data-i18n="nav.explore">Explore</h2>
             </div>
-            <button id="refreshExplore" class="mini-button ghost">Refresh</button>
+            <button id="refreshExplore" class="mini-button ghost" data-i18n="common.refresh">Refresh</button>
           </div>
 
           <div class="explore-tabs" id="exploreTabs">
-            <button class="selected" data-explore-type="modpacks">Modpacks</button>
-            <button data-explore-type="mods">Mods</button>
-            <button data-explore-type="resourcepacks">Resource Packs</button>
-            <button data-explore-type="datapacks">Data Packs</button>
-            <button data-explore-type="shaders">Shaders</button>
-            <button data-explore-type="servers">Servers</button>
+            <button class="selected" data-explore-type="modpacks" data-i18n="explore.modpacks">Modpacks</button>
+            <button data-explore-type="mods" data-i18n="explore.mods">Mods</button>
+            <button data-explore-type="resourcepacks" data-i18n="explore.resourcepacks">Resource Packs</button>
+            <button data-explore-type="datapacks" data-i18n="explore.datapacks">Data Packs</button>
+            <button data-explore-type="shaders" data-i18n="explore.shaders">Shaders</button>
+            <button data-explore-type="servers" data-i18n="explore.servers">Servers</button>
           </div>
 
           <div class="explore-search">
-            <input id="exploreSearch" placeholder="Search Modrinth..." />
-            <button id="exploreSearchButton" class="mini-button">Search</button>
+            <input id="exploreSearch" placeholder="Search Modrinth..." data-i18n-placeholder="explore.searchPlaceholder" />
+            <button id="exploreSearchButton" class="mini-button" data-i18n="common.search">Search</button>
           </div>
 
           <div id="explorePagination" class="explore-pagination"></div>
@@ -177,10 +161,10 @@
         <section id="skinView" class="skin-view app-view" hidden>
           <div class="section-head">
             <div>
-              <p class="eyebrow">Player style</p>
-              <h2>Skin Selector</h2>
+              <p class="eyebrow" data-i18n="skin.eyebrow">Player style</p>
+              <h2 data-i18n="skin.title">Skin Selector</h2>
             </div>
-            <button id="skinUploadButton" class="mini-button">Upload Skin</button>
+            <button id="skinUploadButton" class="mini-button" data-i18n="skin.upload">Upload Skin</button>
           </div>
 
           <div id="skinLoginGate" class="skin-login-gate">
@@ -213,22 +197,22 @@
                   </div>
                 </div>
               </div>
-              <p class="drag-hint">Drag to rotate</p>
+              <p class="drag-hint" data-i18n="skin.drag">Drag to rotate</p>
               <div class="modal-actions">
-                <button id="skinChangeButton" class="play-button" type="button">Change</button>
-                <button id="skinRemoveButton" class="secondary-button" type="button">Remove</button>
+                <button id="skinChangeButton" class="play-button" type="button" data-i18n="common.change">Change</button>
+                <button id="skinRemoveButton" class="secondary-button" type="button" data-i18n="common.remove">Remove</button>
               </div>
               <p id="skinStatus" class="auth-status">Upload a Minecraft skin PNG, select it, then click Change.</p>
             </article>
 
             <article class="skin-library">
               <div class="skin-library-head">
-                <h3>Saved skins</h3>
+                <h3 data-i18n="skin.saved">Saved skins</h3>
                 <label class="skin-add-card">
                   <input id="skinFileInput" type="file" accept="image/png" hidden />
                   <span class="skin-plus">+</span>
-                  <strong>Add skin</strong>
-                  <small>PNG only</small>
+                  <strong data-i18n="skin.add">Add skin</strong>
+                  <small data-i18n="skin.pngOnly">PNG only</small>
                 </label>
               </div>
               <div id="skinGrid" class="skin-grid"></div>
@@ -236,8 +220,53 @@
           </div>
         </section>
 
+        <section id="settingsView" class="settings-view app-view" hidden>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow" data-i18n="settings.eyebrow">Launcher preferences</p>
+              <h2 data-i18n="nav.settings">Settings</h2>
+            </div>
+          </div>
+
+          <div class="settings-tabs" id="settingsTabs">
+            <button class="selected" type="button" data-settings-tab="appearance" data-i18n="settings.appearance">Appearance</button>
+            <button type="button" data-settings-tab="language" data-i18n="settings.language">Language</button>
+          </div>
+
+          <div class="settings-panels">
+            <article id="appearanceSettings" class="panel settings-panel">
+              <h3 data-i18n="settings.appearance">Appearance</h3>
+              <div class="field-group">
+                <span data-i18n="settings.theme">Theme</span>
+                <div class="segmented theme-options" id="themeOptions">
+                  <button type="button" data-theme="color" class="selected" data-i18n="settings.colorTheme">Color</button>
+                  <button type="button" data-theme="gray" data-i18n="settings.grayTheme">Black / Gray</button>
+                </div>
+              </div>
+              <h3 data-i18n="settings.uiColor">UI Color</h3>
+              <div class="swatches" id="swatches"></div>
+              <label>
+                <span data-i18n="settings.custom">Custom</span>
+                <input id="accent" type="color" />
+              </label>
+            </article>
+
+            <article id="languageSettings" class="panel settings-panel" hidden>
+              <div class="settings-panel-head">
+                <div>
+                  <h3 data-i18n="settings.language">Language</h3>
+                  <p class="auth-status" data-i18n="settings.languageHelp">Choose the launcher language. Search by language name or region.</p>
+                </div>
+                <strong id="selectedLanguageLabel">English</strong>
+              </div>
+              <input id="languageSearch" type="search" placeholder="Search languages..." data-i18n-placeholder="settings.searchLanguages" />
+              <div id="languageList" class="language-list"></div>
+            </article>
+          </div>
+        </section>
+
         <footer class="data-path home-view">
-          <span>Saving to</span>
+          <span data-i18n="common.savingTo">Saving to</span>
           <code id="dataPath">Loading...</code>
         </footer>
       </section>
